@@ -63,9 +63,12 @@ metamorph/
 │       │       └── driving/        # MigrationCommand (primary port)
 │       ├── application/            # Mozaik Agents, Runtime, MetamorphState, MigrationRunner
 │       │   └── src/
-│       │       ├── agents/         # Mapper, Worker, Reviewer, PackageManager, Coordinator, Integration, Reporter
+│       │       ├── agents/         # Vertical feature slices (worker/, reviewer/, coordinator/, integration/, etc.)
+│       │       ├── concurrency/    # ConcurrencyQueue (bounded execution)
+│       │       ├── context/        # FileTreeBuilder, NeighborContext
+│       │       ├── analysis/       # NextMigrationHints, FrontendRuntimeHints, classifyMissingFile
 │       │       ├── migration/      # Plugins, structure verifiers, registry
-│       │       └── utils/          # FileTreeBuilder, NeighborContext, NextMigrationHints
+│       │       └── utils/          # Backward-compatibility re-exports
 │       ├── infrastructure/         # Concrete Adapters
 │       │   └── src/
 │       │       ├── db/             # SQLiteStateStore (.metamorph/history.db)
@@ -74,6 +77,9 @@ metamorph/
 │       │       ├── tools/          # AstTools (ts-morph), BuildTools, LinterTools
 │       │       └── server/         # Express REST API (SSE endpoints for Dashboard)
 │       └── cli/                    # Executable CLI with Commander and Ora
+│           └── src/
+│               ├── commands/       # Modular command slices (run/, config/, ui/, apply/, rollback/, etc.)
+│               └── index.ts        # Commander registration entry point (< 40 lines)
 ├── .agents/                        # AI context rules, skills, and knowledge base
 └── docs/                           # Architectural whitepapers and engineering standards
 ```
