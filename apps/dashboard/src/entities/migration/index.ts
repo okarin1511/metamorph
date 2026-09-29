@@ -50,6 +50,20 @@ export interface DetectedTech {
   profile?: ProjectProfile;
 }
 
+export interface TaskItem {
+  filePath: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'failed';
+  error?: string;
+}
+
+export interface MigrationEventItem {
+  id: number;
+  eventName: string;
+  payload?: Record<string, unknown>;
+  timestamp: string | Date;
+  producerId?: string;
+}
+
 export interface MigrationPlan {
   id: string;
   runId: string;
@@ -65,5 +79,5 @@ export interface MigrationPlan {
   totalFiles: number;
   migratedFiles: number;
   createdAt: string;
-  tasks: any[];
+  tasks: TaskItem[];
 }

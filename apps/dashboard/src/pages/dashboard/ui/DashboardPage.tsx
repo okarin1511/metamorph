@@ -1,4 +1,4 @@
-import type { MigrationPlan, Tab } from '@/entities/migration';
+import type { MigrationPlan, Tab, TaskItem, MigrationEventItem } from '@/entities/migration';
 import { SWARM_AGENTS, classifySwarmAgent, type SwarmAgentId } from '@/entities/migration/agents';
 import { useAlertStore } from '@/shared/store/alertStore';
 import { EventLog } from '@/widgets/event-log/EventLog';
@@ -22,7 +22,7 @@ function tabFromHash(): Tab {
 
 export const DashboardPage = () => {
   const [plans, setPlans] = useState<MigrationPlan[]>([]);
-  const [events, setEvents] = useState<any[]>([]);
+  const [events, setEvents] = useState<MigrationEventItem[]>([]);
   const [activeTab, setActiveTab] = useState<Tab>(tabFromHash);
 
   const selectTab = (tab: Tab) => {
@@ -130,8 +130,8 @@ export const DashboardPage = () => {
               packageManager={latestPlan.packageManager}
             />
           );
-        } catch (err: any) {
-          showAlert('Apply Failed', <p className="text-red-500 font-bold">{err.message}</p>);
+        } catch (err: unknown) {
+          showAlert('Apply Failed', <p className="text-red-500 font-bold">{err instanceof Error ? err.message : String(err)}</p>);
         } finally {
           setIsApplying(false);
         }
@@ -153,8 +153,8 @@ export const DashboardPage = () => {
             body: JSON.stringify({ runId: latestPlan.runId })
           });
           handleResetMigration();
-        } catch (err: any) {
-          showAlert('Discard Failed', <p className="text-red-500">{err.message}</p>);
+        } catch (err: unknown) {
+          showAlert('Discard Failed', <p className="text-red-500">{err instanceof Error ? err.message : String(err)}</p>);
         }
       }
     );
@@ -185,8 +185,8 @@ export const DashboardPage = () => {
       }
 
       await fetchData();
-    } catch (err: any) {
-      setStartError(err.message);
+    } catch (err: unknown) {
+      setStartError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsStarting(false);
     }
@@ -196,10 +196,10 @@ export const DashboardPage = () => {
   const latestPlan = plans.length > 0 ? plans[0] : null;
 
   // Overview Stats
-  const pendingTasks = latestPlan?.tasks?.filter((t: any) => t.status === 'pending').length || 0;
-  const inProgressTasks = latestPlan?.tasks?.filter((t: any) => t.status === 'in_progress').length || 0;
-  const completedTasks = latestPlan?.tasks?.filter((t: any) => t.status === 'completed').length || 0;
-  const failedTasks = latestPlan?.tasks?.filter((t: any) => t.status === 'failed').length || 0;
+  const pendingTasks = latestPlan?.tasks?.filter((t: TaskItem) => t.status === 'pending').length || 0;
+  const inProgressTasks = latestPlan?.tasks?.filter((t: TaskItem) => t.status === 'in_progress').length || 0;
+  const completedTasks = latestPlan?.tasks?.filter((t: TaskItem) => t.status === 'completed').length || 0;
+  const failedTasks = latestPlan?.tasks?.filter((t: TaskItem) => t.status === 'failed').length || 0;
 
   const isFailed = latestPlan?.phase === 'failed' || latestPlan?.outcome === 'failed';
   const isSuccess = latestPlan?.phase === 'completed' && latestPlan?.outcome === 'success';
@@ -243,7 +243,7 @@ export const DashboardPage = () => {
           : 'All files are migrated and the shadow build passed! Click "Apply Migration" to copy the changes into your repo on a dedicated git branch.'}</p>
       </div>
     );
-  }, [isFinished, isApplied, isFailed, latestPlan]);
+  }, [isFinished, isApplied, isFailed, latestPlan, showAlert]);
 
   // Same run + same event vocabulary as Live Swarm so bars grow with the flow
   const chartData = useMemo(() => {

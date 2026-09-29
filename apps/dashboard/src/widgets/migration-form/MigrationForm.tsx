@@ -63,8 +63,8 @@ export const MigrationForm = ({ onStart, isStarting, startError }: MigrationForm
             setDetectError('No supported framework detected in this directory.');
           }
         }
-      } catch (err: any) {
-        setDetectError(err.message);
+      } catch (err: unknown) {
+        setDetectError(err instanceof Error ? err.message : String(err));
       } finally {
         setDetecting(false);
       }
