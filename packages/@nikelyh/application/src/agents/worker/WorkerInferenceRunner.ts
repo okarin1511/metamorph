@@ -1,9 +1,16 @@
 import { Agent, createAgent as createMozaikAgent, SituationContext, SituationSpecification, Tool } from '@mozaik-ai/core';
-import { SemanticEventName, SemanticEventPayloads } from '@nikelyh/domain';
+import { SemanticEventName, SemanticEventPayloads, TokenUsage } from '@nikelyh/domain';
 import * as fs from 'fs';
 import { join, leave, resolveRuntime, runLoop, sendEvent } from '../../runtime';
 import { findShadowRoot } from '../../analysis/NextMigrationHints';
 import { MISSING_AFTER_WORKER, workerCompletionKind } from '../../analysis/workerCompletion';
+import { TokenAccountingService } from '../../accounting/TokenAccountingService';
+
+class WhenTokensReported extends SituationSpecification {
+  isSatisfiedBy({ event, participant }: SituationContext): boolean {
+    return event.type === 'inference.completed' && event.producerId === participant.getId();
+  }
+}
 
 class WhenInferenceCompleted extends SituationSpecification {
   isSatisfiedBy({ event, participant }: SituationContext): boolean {
@@ -82,6 +89,11 @@ export async function startWorkerLoop(
     const repository = runtime.state.repository;
     await repository.updateTaskStatus(planId, filePath, 'in_progress');
 
+    const config = runtime.state.config;
+    const modelToUse = config?.model || process.env.METAMORPH_MODEL || 'gpt-5.4';
+    const timeoutMs = config?.inferenceTimeoutMs || 120000;
+
+    let capturedUsage: TokenUsage | null = null;
     const workerTools = await resolveWorkerTools(participant, filePath);
     const tempAgent = createMozaikAgent({
       name: `Worker-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -90,27 +102,46 @@ export async function startWorkerLoop(
       tools: workerTools,
       handlers: [
         {
+          specification: new WhenTokensReported(),
+          processor: {
+            async apply({ event }) {
+              const output = event.payload as { tokenUsage?: TokenUsage };
+              if (output?.tokenUsage) {
+                capturedUsage = output.tokenUsage;
+              }
+            },
+          },
+        },
+        {
           specification: new WhenInferenceCompleted(),
           processor: {
             async apply({ participant: tempParticipant }) {
               if (isDone) return;
               try {
                 await handleCompletedInference({ tempParticipant, filePath, planId });
+                const accounting = new TokenAccountingService(repository);
+                await accounting.recordUsage({
+                  planId,
+                  agentRole: 'worker',
+                  modelId: modelToUse,
+                  tokenUsage: capturedUsage,
+                  promptText: prompt,
+                  completionText: fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf-8') : '',
+                  producerId: tempParticipant.getId(),
+                });
+              } catch (e) {
+                console.error(`[WorkerAgent:${tempParticipant.getId()}] Error accounting tokens:`, e);
               } finally {
                 leave(tempParticipant);
                 resolve();
               }
-            }
-          }
-        }
+            },
+          },
+        },
       ],
     });
 
     join(tempAgent);
-
-    const config = runtime.state.config;
-    const modelToUse = config?.model || process.env.METAMORPH_MODEL || 'gpt-5.4';
-    const timeoutMs = config?.inferenceTimeoutMs || 120000;
 
     const timer = setTimeout(async () => {
       if (!isDone) {

@@ -1,10 +1,11 @@
-import type { MigrationPlan, Tab, TaskItem, MigrationEventItem } from '@/entities/migration';
+import type { MigrationPlan, Tab, TaskItem, MigrationEventItem, MigrationCostSummary } from '@/entities/migration';
 import { SWARM_AGENTS, classifySwarmAgent, type SwarmAgentId } from '@/entities/migration/agents';
 import { useAlertStore } from '@/shared/store/alertStore';
 import { EventLog } from '@/widgets/event-log/EventLog';
 import { MigrationForm } from '@/widgets/migration-form/MigrationForm';
 import { AgentRoster } from '@/widgets/overview/AgentRoster';
 import { OverviewStats } from '@/widgets/overview/OverviewStats';
+import { CostTracker } from '@/widgets/overview/CostTracker';
 import { MigrationQueue } from '@/widgets/queue/MigrationQueue';
 import { LiveSwarm } from '@/widgets/swarm-view/LiveSwarm';
 import { Cpu, HardDrive, LayoutDashboard, Radio, Bug, Plus } from 'lucide-react';
@@ -23,6 +24,7 @@ function tabFromHash(): Tab {
 export const DashboardPage = () => {
   const [plans, setPlans] = useState<MigrationPlan[]>([]);
   const [events, setEvents] = useState<MigrationEventItem[]>([]);
+  const [costSummary, setCostSummary] = useState<MigrationCostSummary | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>(tabFromHash);
 
   const selectTab = (tab: Tab) => {
@@ -58,6 +60,18 @@ export const DashboardPage = () => {
       const eventsData = await eventsRes.json();
       setPlans(plansData);
       setEvents(eventsData.reverse());
+
+      if (plansData.length > 0 && plansData[0].runId) {
+        try {
+          const costRes = await fetch(`${API_BASE}/api/cost/${plansData[0].runId}`);
+          if (costRes.ok) {
+            const costData = await costRes.json();
+            setCostSummary(costData);
+          }
+        } catch {
+          // Ignore cost fetch error if endpoint not reached
+        }
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
     }
@@ -425,6 +439,7 @@ export const DashboardPage = () => {
           <main className="flex-1 mt-6">
             {activeTab === 'overview' && (
               <div className="space-y-8">
+                <CostTracker costSummary={costSummary} totalFiles={latestPlan?.tasks?.length || 0} />
                 <AgentRoster counts={agentCounts} activeAgent={activeAgent} />
                 <OverviewStats 
                   pendingTasks={pendingTasks} 

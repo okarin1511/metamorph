@@ -99,4 +99,5 @@ export * from './agents/PackageManagerAgent';
 export * from './agents/CoordinatorAgent';
 export * from './agents/ReporterAgent';
 export * from './agents/IntegrationAgent';
+export * from './accounting/TokenAccountingService';
 export * from './MigrationRunner';

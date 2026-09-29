@@ -1,5 +1,5 @@
+import { isMozaikBundledModel, MetamorphConfig, MigrationCostSummary, MOZAIK_BUNDLED_MODELS } from '@nikelyh/domain';
 import chalk from 'chalk';
-import { MetamorphConfig, MOZAIK_BUNDLED_MODELS, isMozaikBundledModel } from '@nikelyh/domain';
 
 export function logStartupContext(): void {
   const isDev = process.env.METAMORPH_DEV === '1';
@@ -59,4 +59,49 @@ export function presentMigrationFailure(runId: string, targetPath: string): void
   console.log(chalk.red(`\n❌ Migration failed in shadow workspace.`));
   console.log(chalk.yellow(`Check .metamorph/shadow/${runId}/MIGRATION.md or run 'metamorph ui' for failure details.`));
   console.log(chalk.gray(`Your original codebase in "${targetPath}" remains completely untouched.\n`));
+}
+
+export function presentCostSummary(summary: MigrationCostSummary): void {
+  if (!summary || summary.totalTokens === 0) return;
+
+  console.log(chalk.cyan(`\n────────────────────────────────────────────────────────────`));
+  console.log(chalk.bold.white(`📊 LLM Token Consumption & Cost Estimation`));
+  console.log(chalk.cyan(`────────────────────────────────────────────────────────────`));
+  console.log(
+    chalk.white(`Total Tokens:     `) +
+      chalk.green(summary.totalTokens.toLocaleString()) +
+      chalk.gray(` (Prompt: ${summary.promptTokens.toLocaleString()} | Completion: ${summary.completionTokens.toLocaleString()})`)
+  );
+  console.log(
+    chalk.white(`Estimated Cost:   `) +
+      chalk.yellow(`$${summary.totalCostUsd.toFixed(4)} USD`)
+  );
+
+  const roles = Object.entries(summary.byAgentRole).filter(([_, data]) => data.tokens > 0);
+  if (roles.length > 0) {
+    console.log(chalk.gray(`\nBreakdown by Agent Role:`));
+    for (const [role, data] of roles) {
+      console.log(
+        chalk.gray(`  • `) +
+          chalk.cyan(role.padEnd(12)) +
+          chalk.white(`${data.tokens.toLocaleString().padStart(8)} tokens `) +
+          chalk.yellow(`($${data.costUsd.toFixed(4)} USD)`) +
+          chalk.gray(` [${data.executions} executions]`)
+      );
+    }
+  }
+
+  const models = Object.entries(summary.byModel).filter(([_, data]) => data.totalTokens > 0);
+  if (models.length > 1) {
+    console.log(chalk.gray(`\nBreakdown by Model:`));
+    for (const [model, data] of models) {
+      console.log(
+        chalk.gray(`  • `) +
+          chalk.white(model.padEnd(20)) +
+          chalk.green(`${data.totalTokens.toLocaleString().padStart(8)} tokens `) +
+          chalk.yellow(`($${data.costUsd.toFixed(4)} USD)`)
+      );
+    }
+  }
+  console.log(chalk.cyan(`────────────────────────────────────────────────────────────\n`));
 }

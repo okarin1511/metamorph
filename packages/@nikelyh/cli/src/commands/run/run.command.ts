@@ -30,6 +30,7 @@ import {
   presentMigrationStart,
   presentMigrationSuccess,
   presentMigrationFailure,
+  presentCostSummary,
 } from './run.presenter';
 
 async function resolveTargetDirectory(targetPathArg?: string): Promise<string> {
@@ -147,12 +148,20 @@ async function pollMigrationLoop(
 
     if (plan.outcome === 'success') {
       waitSpinner.succeed();
+      try {
+        const costSummary = await store.getCostSummary(result.runId);
+        presentCostSummary(costSummary);
+      } catch {}
       presentMigrationSuccess(result, targetPath);
       process.exit(0);
     }
 
     if (plan.phase === 'failed' || plan.outcome === 'failed') {
       waitSpinner.fail();
+      try {
+        const costSummary = await store.getCostSummary(result.runId);
+        presentCostSummary(costSummary);
+      } catch {}
       presentMigrationFailure(result.runId, targetPath);
       process.exit(1);
     }
