@@ -56,14 +56,18 @@ Pure core with **zero I/O dependencies**. Defines business rules, contracts, and
 ### 3.2. `packages/@nikelyh/application`
 Orchestration layer integrating the Mozaik v4 runtime (`@mozaik-ai/core`):
 * **Blackboard State (`src/runtime.ts`)**: `MetamorphState` managing journals, retry counters, and coordination locks.
-* **Agent Swarm (`src/agents/`)**:
+* **Agent Swarm (`src/agents/`)**: Vertical feature slices with dedicated prompts, runners, and validators:
   1. `MapperAgent`: Discovers source files, initializes SQLite tasks, and emits `file.discovered`.
-  2. `WorkerAgent`: Concurrency-bounded (`limit: 3`) ephemeral worker performing code transformations with catalog hints and `NeighborContext`.
-  3. `ReviewerAgent`: Concurrency-bounded (`limit: 3`) ephemeral reviewer running AST syntax checks and semantic contract validations.
+  2. `WorkerAgent` (`src/agents/worker/`): Concurrency-bounded (`limit: 3`) ephemeral worker performing code transformations with catalog hints, `NeighborContext`, `WorkerPromptBuilder`, and `WorkerInferenceRunner`.
+  3. `ReviewerAgent` (`src/agents/reviewer/`): Concurrency-bounded (`limit: 3`) ephemeral reviewer running AST syntax checks (`SyntaxValidator`), structure checks (`StructureVerifier`), and semantic contract validations (`ReviewerInferenceRunner`).
   4. `PackageManagerAgent`: Mutates `package.json` in memory and on disk without running host subprocesses.
   5. `CoordinatorAgent`: Watchdog polling every 8s to detect when all tasks settle before triggering shadow integration.
   6. `IntegrationAgent`: Runs clean installs and compilation builds inside the sandbox.
   7. `ReporterAgent`: Generates `MIGRATION.md` with dynamic commands.
+* **Vertical Capability Slices**:
+  - `src/concurrency/`: `ConcurrencyQueue` limiting simultaneous LLM inferences.
+  - `src/context/`: `FileTreeBuilder`, `NeighborContext` providing cross-file context.
+  - `src/analysis/`: Diagnostic and heuristic tools (`NextMigrationHints`, `FrontendRuntimeHints`, `classifyMissingFile`, `workerCompletion`).
 
 ### 3.3. `packages/@nikelyh/infrastructure`
 Secondary adapter implementations:
@@ -75,13 +79,21 @@ Secondary adapter implementations:
   - `StructureInspector`: Physical router variant detection.
   - `SubsumptionEngine`: Directed Acyclic Graph (DAG) resolving meta-framework collisions.
 
-### 3.4. `apps/dashboard`
+### 3.4. `packages/@nikelyh/cli`
+Primary driving adapter with modular command slices (`src/commands/`):
+* `commands/run/`: Migration orchestration execution, prompt/flag parsing (`run.options.ts`, `run.presenter.ts`, `run.command.ts`).
+* `commands/config/`: Interactive LLM configuration prompts and tests.
+* `commands/ui/`: Embedded dashboard server lifecycle and auto-browser opening.
+* `commands/apply/`, `commands/rollback/`, `commands/reset/`, `commands/detect/`, `commands/list/`: Discrete lifecycle commands.
+
+### 3.5. `apps/dashboard`
 React 18/19 SPA following **Feature-Sliced Design (FSD)**:
 * `shared` → `entities` → `features` → `widgets` → `pages` → `app`.
 * **Zero Emojis**: Employs `lucide-react` vector icons exclusively.
 * **Real-Time Telemetry**: Connects to `/api/events` via Server-Sent Events (SSE).
 
 ---
+
 
 ## 4. Supported Migration Matrix
 
