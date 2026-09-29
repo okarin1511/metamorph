@@ -4,7 +4,6 @@ import * as fs from 'fs';
 import { join, leave, resolveRuntime, runLoop, sendEvent } from '../../runtime';
 import { findShadowRoot } from '../../analysis/NextMigrationHints';
 import { MISSING_AFTER_WORKER, workerCompletionKind } from '../../analysis/workerCompletion';
-import { TokenAccountingService } from '../../accounting/TokenAccountingService';
 
 class WhenTokensReported extends SituationSpecification {
   isSatisfiedBy({ event, participant }: SituationContext): boolean {
@@ -119,18 +118,21 @@ export async function startWorkerLoop(
               if (isDone) return;
               try {
                 await handleCompletedInference({ tempParticipant, filePath, planId });
-                const accounting = new TokenAccountingService(repository);
-                await accounting.recordUsage({
-                  planId,
-                  agentRole: 'worker',
-                  modelId: modelToUse,
-                  tokenUsage: capturedUsage,
-                  promptText: prompt,
-                  completionText: fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf-8') : '',
+                sendEvent({
+                  type: SemanticEventName.TOKENS_REPORTED,
                   producerId: tempParticipant.getId(),
-                });
+                  occurredAt: new Date(),
+                  payload: {
+                    planId,
+                    agentRole: 'worker',
+                    modelId: modelToUse,
+                    tokenUsage: capturedUsage,
+                    promptText: prompt,
+                    completionText: fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf-8') : '',
+                  } as SemanticEventPayloads.TokensReported,
+                }, tempParticipant.getId());
               } catch (e) {
-                console.error(`[WorkerAgent:${tempParticipant.getId()}] Error accounting tokens:`, e);
+                console.error(`[WorkerAgent:${tempParticipant.getId()}] Error completing inference:`, e);
               } finally {
                 leave(tempParticipant);
                 resolve();

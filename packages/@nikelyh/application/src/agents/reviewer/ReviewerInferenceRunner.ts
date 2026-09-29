@@ -15,7 +15,6 @@ import {
 import { collectFileHints } from '../../migration/registry';
 import { join, leave, resolveRuntime, runLoop, sendEvent } from '../../runtime';
 import { buildNeighborContext } from '../../context/NeighborContext';
-import { TokenAccountingService } from '../../accounting/TokenAccountingService';
 
 export interface ReviewParsedResult {
   status: 'APPROVED' | 'REJECTED' | 'FATAL_MISMATCH';
@@ -163,18 +162,21 @@ export async function runReviewInference(
                 if (result) {
                   await dispatchReviewResult(result, payload, tempParticipant.getId());
                 }
-                const accounting = new TokenAccountingService(runtime.state.repository);
-                await accounting.recordUsage({
-                  planId: payload.planId,
-                  agentRole: 'reviewer',
-                  modelId: modelToUse,
-                  tokenUsage: capturedUsage,
-                  promptText: prompt,
-                  completionText: answerText || '',
+                sendEvent({
+                  type: SemanticEventName.TOKENS_REPORTED,
                   producerId: tempParticipant.getId(),
-                });
+                  occurredAt: new Date(),
+                  payload: {
+                    planId: payload.planId,
+                    agentRole: 'reviewer',
+                    modelId: modelToUse,
+                    tokenUsage: capturedUsage,
+                    promptText: prompt,
+                    completionText: answerText || '',
+                  } as SemanticEventPayloads.TokensReported,
+                }, tempParticipant.getId());
               } catch (e) {
-                console.error(`[ReviewerAgent:${tempParticipant.getId()}] Error accounting tokens:`, e);
+                console.error(`[ReviewerAgent:${tempParticipant.getId()}] Error completing review:`, e);
               } finally {
                 leave(tempParticipant);
                 resolve();
