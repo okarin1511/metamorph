@@ -21,6 +21,8 @@ export default defineConfig([
     rules: {
       'react-refresh/only-export-components': 'off',
       'react-hooks/set-state-in-effect': 'off',
+      'max-lines': ['error', { max: 250, skipBlankLines: true, skipComments: true }],
+      'max-lines-per-function': ['warn', { max: 70, skipBlankLines: true, skipComments: true }],
     },
   },
 ])

@@ -10,6 +10,7 @@ import {
   resolveMigrationCatalog,
   SemanticEventName,
   SemanticEventPayloads,
+  TokenUsage,
 } from '@nikelyh/domain';
 import { collectFileHints } from '../../migration/registry';
 import { join, leave, resolveRuntime, runLoop, sendEvent } from '../../runtime';
@@ -18,6 +19,12 @@ import { buildNeighborContext } from '../../context/NeighborContext';
 export interface ReviewParsedResult {
   status: 'APPROVED' | 'REJECTED' | 'FATAL_MISMATCH';
   errors: string[];
+}
+
+class WhenReviewTokensReported extends SituationSpecification {
+  isSatisfiedBy({ event, participant }: SituationContext): boolean {
+    return event.type === 'inference.completed' && event.producerId === participant.getId();
+  }
 }
 
 class WhenReviewCompleted extends SituationSpecification {
@@ -113,6 +120,17 @@ export async function runReviewInference(
       }
     };
 
+    const runtime = resolveRuntime();
+    const config = runtime.state.config;
+    const modelToUse =
+      config?.reviewerModel ||
+      config?.model ||
+      process.env.METAMORPH_REVIEWER_MODEL ||
+      process.env.METAMORPH_MODEL ||
+      'gpt-5.4';
+    const timeoutMs = config?.inferenceTimeoutMs || 120000;
+
+    let capturedUsage: TokenUsage | null = null;
     const reviewerId = `Reviewer-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     const tempAgent = createMozaikAgent({
       name: reviewerId,
@@ -121,6 +139,17 @@ export async function runReviewInference(
         'You are a staff engineer reviewing a migrated file against its neighbors. Reject if public props/emits do not match imported modules, if a router file re-implements a screen instead of importing it, or if a screen was hollowed out. UI that lived under src/pages in a SPA is not a Next Pages Router file. Do not reject a file just because it lacks every catalog feature. FATAL_MISMATCH only for an unfixable paradigm break.',
       tools: [],
       handlers: [
+        {
+          specification: new WhenReviewTokensReported(),
+          processor: {
+            async apply({ event }) {
+              const output = event.payload as { tokenUsage?: TokenUsage };
+              if (output?.tokenUsage) {
+                capturedUsage = output.tokenUsage;
+              }
+            },
+          },
+        },
         {
           specification: new WhenReviewCompleted(),
           processor: {
@@ -133,6 +162,21 @@ export async function runReviewInference(
                 if (result) {
                   await dispatchReviewResult(result, payload, tempParticipant.getId());
                 }
+                sendEvent({
+                  type: SemanticEventName.TOKENS_REPORTED,
+                  producerId: tempParticipant.getId(),
+                  occurredAt: new Date(),
+                  payload: {
+                    planId: payload.planId,
+                    agentRole: 'reviewer',
+                    modelId: modelToUse,
+                    tokenUsage: capturedUsage,
+                    promptText: prompt,
+                    completionText: answerText || '',
+                  } as SemanticEventPayloads.TokensReported,
+                }, tempParticipant.getId());
+              } catch (e) {
+                console.error(`[ReviewerAgent:${tempParticipant.getId()}] Error completing review:`, e);
               } finally {
                 leave(tempParticipant);
                 resolve();
@@ -144,16 +188,6 @@ export async function runReviewInference(
     });
 
     join(tempAgent);
-
-    const runtime = resolveRuntime();
-    const config = runtime.state.config;
-    const modelToUse =
-      config?.reviewerModel ||
-      config?.model ||
-      process.env.METAMORPH_REVIEWER_MODEL ||
-      process.env.METAMORPH_MODEL ||
-      'gpt-5.4';
-    const timeoutMs = config?.inferenceTimeoutMs || 120000;
 
     const timer = setTimeout(async () => {
       if (!isDone) {

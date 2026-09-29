@@ -184,3 +184,23 @@ Metamorph enforces standardized PR templates located in `.github/PULL_REQUEST_TE
 - `architecture.md`: Structural refactors and SQLite auto-migrations.
 - `perf_optimization.md`: Bottlenecks, profiling, and benchmark comparisons.
 - `PULL_REQUEST_TEMPLATE.md`: General/default fallback.
+
+---
+
+## 7. LLM Token Accounting & Real-time Cost Estimation Engine (Issue #46)
+
+Metamorph provides built-in, local-first token consumption tracking and financial cost estimation adhering to strict Hexagonal separation:
+1. **Domain (`@nikelyh/domain`)**:
+   - `TokenUsage` (`promptTokens`, `completionTokens`, `totalTokens`).
+   - `ModelPricingTier` and `calculateTokenCost()`: Baseline pricing for `MOZAIK_BUNDLED_MODELS` with `$0.00 USD` fallback for local models (Ollama/vLLM) and custom pricing overrides.
+   - `SemanticEventName.TOKENS_CONSUMED` with typed payload.
+   - `StateRepository` port extended with `recordTokenUsage` and `getCostSummary`.
+2. **Infrastructure (`@nikelyh/infrastructure`)**:
+   - Auto-migrated `token_usage` table and `idx_token_usage_run` index in `.metamorph/history.db` using `node:sqlite` (`DatabaseSync`).
+   - `GET /api/cost/:runId` endpoint in `createApiServer()`.
+3. **Application (`@nikelyh/application`)**:
+   - `TokenAccountingService`: Calculates costs deterministically and emits `tokens.consumed`.
+   - Intercepts `inference.completed` and `model.answer` in `WorkerInferenceRunner` and `ReviewerInferenceRunner`.
+4. **Presentation (CLI & Web Dashboard)**:
+   - CLI: `presentCostSummary()` prints total tokens, prompt/completion breakdown, estimated cost in USD, and agent role distribution.
+   - Web Dashboard: `<CostTracker />` widget in the Overview tab with `lucide-react` vector icons (`Coins`, `Cpu`, `Zap`, `Activity`), strictly zero emojis, and Neo-brutalist styling.

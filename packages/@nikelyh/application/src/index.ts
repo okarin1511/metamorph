@@ -7,6 +7,7 @@ import { createPackageManagerAgent } from './agents/PackageManagerAgent';
 import { createCoordinatorAgent } from './agents/CoordinatorAgent';
 import { createReporterAgent } from './agents/ReporterAgent';
 import { createIntegrationAgent } from './agents/IntegrationAgent';
+import { createAccountingAgent } from './agents/AccountingAgent';
 import { registerBuiltinMigrationPlugins } from './migration/plugins';
 
 import { Tool, createAgent, createHuman, SituationSpecification } from '@mozaik-ai/core';
@@ -51,7 +52,7 @@ export function bootstrapMetamorph(repository: StateRepository, tools: Tool[] = 
             const repository = runtime.state.repository;
             
             // Only log our semantic events, ignore internal 'inference.*' noise
-            if (event.type.includes('migration') || event.type.includes('file') || event.type.includes('phase') || event.type.includes('system')) {
+            if (event.type.includes('migration') || event.type.includes('file') || event.type.includes('phase') || event.type.includes('system') || event.type.includes('tokens')) {
               await repository.logEvent(event.type, { 
                 ...(event.payload as Record<string, unknown>), 
                 producerId: event.producerId 
@@ -73,6 +74,7 @@ export function bootstrapMetamorph(repository: StateRepository, tools: Tool[] = 
   const reporterTools = tools.filter((tool) => tool.name === 'read_file' || tool.name === 'write_file' || tool.name === 'list_directory');
   const reporter = createReporterAgent(reporterTools);
   const integrationAgent = createIntegrationAgent(tools);
+  const accountingAgent = createAccountingAgent();
 
   join(mapper);
   join(worker);
@@ -81,8 +83,9 @@ export function bootstrapMetamorph(repository: StateRepository, tools: Tool[] = 
   join(coordinator);
   join(reporter);
   join(integrationAgent);
+  join(accountingAgent);
 
-  console.log(`[App] Mozaik initialized. Agents joined: Mapper, Worker, Reviewer, PackageManager, Coordinator, Reporter, IntegrationAgent`);
+  console.log(`[App] Mozaik initialized. Agents joined: Mapper, Worker, Reviewer, PackageManager, Coordinator, Reporter, IntegrationAgent, AccountingAgent`);
 
   return {
     mapperId: mapper.getId(),
@@ -99,4 +102,6 @@ export * from './agents/PackageManagerAgent';
 export * from './agents/CoordinatorAgent';
 export * from './agents/ReporterAgent';
 export * from './agents/IntegrationAgent';
+export * from './agents/AccountingAgent';
+export * from './accounting/TokenAccountingService';
 export * from './MigrationRunner';
