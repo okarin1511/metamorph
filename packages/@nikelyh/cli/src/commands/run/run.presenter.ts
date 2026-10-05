@@ -40,9 +40,13 @@ export function presentMigrationStart(params: {
   console.log(chalk.gray(`Target: ${targetPath} | ${from} -> ${to}`));
   console.log(
     chalk.gray(
-      `Model: ${config.model} | Concurrency: ${config.concurrency} | Timeout: ${config.inferenceTimeoutMs / 1000}s | Retries: ${config.maxRetries}\n`
+      `Model: ${config.model} | Concurrency: ${config.concurrency} | Timeout: ${config.inferenceTimeoutMs / 1000}s | Retries: ${config.maxRetries}`
     )
   );
+  if (config.disabledAgents && config.disabledAgents.length > 0) {
+    console.log(chalk.yellow(`⚡ Disabled Agents: ${config.disabledAgents.join(', ')} (token-saving mode enabled)`));
+  }
+  console.log('');
 }
 
 export function presentMigrationSuccess(result: { shadowPath: string; runId: string }, targetPath: string): void {
