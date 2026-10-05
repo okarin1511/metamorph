@@ -410,3 +410,22 @@ export function createReporterAgent(tools: Tool[] = []): Agent {
     ],
   });
 }
+
+/**
+ * Deterministic 0-token fallback reporter used when ReporterAgent is disabled.
+ * Emits no inference calls and writes MIGRATION.md deterministically upon migration completion.
+ */
+export function createFallbackReporterAgent(): Agent {
+  return createAgent({
+    name: 'FallbackReporter',
+    capabilities: ['reporting'],
+    instruction:
+      'You are the deterministic 0-token Fallback Reporter on the Metamorph swarm. You write MIGRATION.md when migration completes without executing any LLM inference loops.',
+    tools: [],
+    handlers: [
+      { specification: new WhenMigrationStarted(), processor: startedProcessor },
+      { specification: new WhenMigrationCompleted(), processor: completedProcessor },
+    ],
+  });
+}
+
