@@ -51,10 +51,16 @@ export function useDashboardState() {
     }
   };
 
+  const [currentTime, setCurrentTime] = useState<number>(() => Date.now());
+
   useEffect(() => {
     fetchData();
     const interval = setInterval(fetchData, 1000);
-    return () => clearInterval(interval);
+    const clockInterval = setInterval(() => setCurrentTime(Date.now()), 5000);
+    return () => {
+      clearInterval(interval);
+      clearInterval(clockInterval);
+    };
   }, []);
 
   const latestPlan = plans.length > 0 ? plans[0] : null;
@@ -91,6 +97,28 @@ export function useDashboardState() {
   const inProgressTasks = latestPlan?.tasks?.filter((t: TaskItem) => t.status === 'in_progress').length || 0;
   const completedTasks = latestPlan?.tasks?.filter((t: TaskItem) => t.status === 'completed').length || 0;
   const failedTasks = latestPlan?.tasks?.filter((t: TaskItem) => t.status === 'failed').length || 0;
+
+  const lastActivityTimestamp = useMemo(() => {
+    let maxTime = latestPlan ? new Date(latestPlan.createdAt).getTime() : 0;
+    for (const evt of currentRunEvents) {
+      const t = new Date(evt.timestamp).getTime();
+      if (t > maxTime) maxTime = t;
+    }
+    return maxTime;
+  }, [currentRunEvents, latestPlan]);
+
+  // If no events for 45s and migration is not completed/failed, treat as stalled/inactive
+  const STALL_THRESHOLD_MS = 45_000;
+  const isStalled = Boolean(
+    !isFinished &&
+    latestPlan &&
+    lastActivityTimestamp > 0 &&
+    (currentTime - lastActivityTimestamp > STALL_THRESHOLD_MS)
+  );
+
+  const stalledDurationSeconds = isStalled
+    ? Math.max(0, Math.floor((currentTime - lastActivityTimestamp) / 1000))
+    : 0;
 
   const chartData = useMemo(() => {
     const counts = Object.fromEntries(SWARM_AGENTS.map((agent) => [agent.id, 0])) as Record<SwarmAgentId, number>;
@@ -190,5 +218,7 @@ export function useDashboardState() {
     agentCounts,
     activeAgent,
     disabledAgents,
+    isStalled,
+    stalledDurationSeconds,
   };
 }

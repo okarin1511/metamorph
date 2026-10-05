@@ -46,6 +46,9 @@ export const DashboardPage = () => {
             isIntegrating={state.isIntegrating}
             latestStatusMessage={state.latestStatusMessage}
             lastApplyBranch={state.lastApply?.branch}
+            isStalled={state.isStalled}
+            stalledDurationSeconds={state.stalledDurationSeconds}
+            onDiscard={actions.handleDiscardMigration}
           />
 
           <DashboardNav activeTab={state.activeTab} onSelectTab={state.selectTab} />

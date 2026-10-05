@@ -1,4 +1,4 @@
-import { Bug, Plus } from 'lucide-react';
+import { Bug, Plus, Trash2 } from 'lucide-react';
 import type { MigrationPlan } from '@/entities/migration';
 
 const GITHUB_REPO = 'https://github.com/yohanvillarp/metamorph';
@@ -38,6 +38,18 @@ export const DashboardHeader = ({
         </div>
       </a>
       <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+        {latestPlan && !isFinished && (
+          <div className="flex flex-wrap items-center gap-2 border-r-2 border-neo-border pr-4 md:pr-6">
+            <button
+              onClick={onDiscard}
+              className="neo-btn font-black text-sm uppercase px-4 py-2 hover:bg-red-200 text-red-950 border-2 border-neo-border flex items-center gap-2 shadow-[2px_2px_0px_0px_var(--neo-text)] active:translate-y-0.5 active:translate-x-0.5 active:shadow-none"
+              title="Discard this incomplete run and reset workspace"
+            >
+              <Trash2 size={16} /> Discard Run
+            </button>
+          </div>
+        )}
+
         {latestPlan && isFinished && !isApplied && (
           <div className="flex flex-wrap items-center gap-2 border-r-2 border-neo-border pr-4 md:pr-6">
             {canApply ? (
@@ -55,9 +67,9 @@ export const DashboardHeader = ({
             )}
             <button
               onClick={onDiscard}
-              className="neo-btn font-black text-sm uppercase px-4 py-2 hover:bg-red-200"
+              className="neo-btn font-black text-sm uppercase px-4 py-2 hover:bg-red-200 flex items-center gap-1.5"
             >
-              Discard
+              <Trash2 size={16} /> Discard
             </button>
           </div>
         )}
