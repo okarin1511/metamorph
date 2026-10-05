@@ -11,6 +11,7 @@ import { useDashboardActions } from '../model/useDashboardActions';
 import { DashboardHeader } from './DashboardHeader';
 import { DashboardStatusBanner } from './DashboardStatusBanner';
 import { DashboardNav } from './DashboardNav';
+import { ServerOfflineBanner } from './ServerOfflineBanner';
 
 export const DashboardPage = () => {
   const state = useDashboardState();
@@ -25,6 +26,9 @@ export const DashboardPage = () => {
 
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-8 flex flex-col min-h-screen">
+      {state.isServerOffline && (
+        <ServerOfflineBanner onRetry={state.fetchData} />
+      )}
       {state.latestPlan ? (
         <>
           <DashboardHeader

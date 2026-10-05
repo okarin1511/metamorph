@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import type { MigrationPlan, Tab, TaskItem, MigrationEventItem } from '@/entities/migration';
 import { SWARM_AGENTS, classifySwarmAgent, type SwarmAgentId } from '@/entities/migration/agents';
 import { apiClient } from '@/shared/api/apiClient';
@@ -21,6 +21,9 @@ export function useDashboardState() {
   const [isApplying, setIsApplying] = useState(false);
   const [appliedRunId, setAppliedRunId] = useState<string | null>(null);
   const [lastApply, setLastApply] = useState<{ gitUsed: boolean; branch?: string; message: string } | null>(null);
+
+  const [isServerOffline, setIsServerOffline] = useState(false);
+  const consecutiveFailuresRef = useRef(0);
 
   const selectTab = (tab: Tab) => {
     setActiveTab(tab);
@@ -46,7 +49,13 @@ export function useDashboardState() {
       ]);
       setPlans(plansData);
       setEvents(eventsData.reverse());
+      consecutiveFailuresRef.current = 0;
+      setIsServerOffline(false);
     } catch (error) {
+      consecutiveFailuresRef.current += 1;
+      if (consecutiveFailuresRef.current >= 3) {
+        setIsServerOffline(true);
+      }
       console.error('Error fetching dashboard data:', error);
     }
   };
@@ -220,5 +229,6 @@ export function useDashboardState() {
     disabledAgents,
     isStalled,
     stalledDurationSeconds,
+    isServerOffline,
   };
 }
