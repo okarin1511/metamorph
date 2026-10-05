@@ -1,3 +1,5 @@
+import { AuxiliaryAgentId } from './AgentTaxonomy';
+
 /**
  * Pure domain representation of the system runtime and swarm configuration.
  * Adheres strictly to Hexagonal Zero-I/O Invariant: zero external dependencies or filesystem operations.
@@ -15,6 +17,8 @@ export interface MetamorphConfig {
   maxRetries: number;
   /** Maximum integration verification rounds in the shadow workspace (default: 4). */
   maxIntegrationRounds: number;
+  /** List of auxiliary agent IDs disabled during swarm execution. */
+  disabledAgents: AuxiliaryAgentId[];
 }
 
 export type MetamorphConfigKey = keyof MetamorphConfig;
@@ -28,6 +32,7 @@ export const DEFAULT_METAMORPH_CONFIG: MetamorphConfig = {
   inferenceTimeoutMs: 120000,
   maxRetries: 2,
   maxIntegrationRounds: 4,
+  disabledAgents: [],
 };
 
 /**
@@ -64,5 +69,6 @@ export function isMetamorphConfigKey(key: string): key is MetamorphConfigKey {
     'inferenceTimeoutMs',
     'maxRetries',
     'maxIntegrationRounds',
+    'disabledAgents',
   ].includes(key);
 }
