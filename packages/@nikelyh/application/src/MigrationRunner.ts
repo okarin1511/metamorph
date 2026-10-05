@@ -105,6 +105,23 @@ export class MigrationRunner {
       dispatcherId
     );
 
+    if (this.config?.disabledAgents && this.config.disabledAgents.length > 0) {
+      sendEvent(
+        {
+          type: SemanticEventName.SYSTEM_LOG as any,
+          producerId: dispatcherId,
+          occurredAt: new Date(),
+          payload: {
+            planId,
+            message: `Swarm initialized with disabled agents: ${this.config.disabledAgents.join(', ')}`,
+            disabledAgents: this.config.disabledAgents,
+            level: 'info',
+          },
+        },
+        dispatcherId
+      );
+    }
+
     return { planId, shadowPath, runId };
   }
 

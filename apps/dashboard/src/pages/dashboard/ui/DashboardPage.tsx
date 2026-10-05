@@ -54,7 +54,7 @@ export const DashboardPage = () => {
             {state.activeTab === 'overview' && (
               <div className="space-y-8">
                 <CostTracker costSummary={costSummary} totalFiles={state.latestPlan.tasks?.length || 0} />
-                <AgentRoster counts={state.agentCounts} activeAgent={state.activeAgent} />
+                <AgentRoster counts={state.agentCounts} activeAgent={state.activeAgent} disabledAgents={state.disabledAgents} />
                 <OverviewStats
                   pendingTasks={state.pendingTasks}
                   inProgressTasks={state.inProgressTasks}

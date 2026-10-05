@@ -144,6 +144,20 @@ export function useDashboardState() {
     }
   };
 
+  const disabledAgents = useMemo(() => {
+    for (const evt of currentRunEvents) {
+      if (Array.isArray(evt.payload?.disabledAgents)) {
+        return evt.payload.disabledAgents as string[];
+      }
+      const msg = String(evt.payload?.message ?? '');
+      const match = msg.match(/disabled agents: ([^\n\r.]+)/i);
+      if (match && match[1]) {
+        return match[1].split(',').map((s) => s.replace(/\([^)]*\)/g, '').trim()).filter(Boolean);
+      }
+    }
+    return [];
+  }, [currentRunEvents]);
+
   return {
     plans,
     latestPlan,
@@ -175,5 +189,6 @@ export function useDashboardState() {
     chartData,
     agentCounts,
     activeAgent,
+    disabledAgents,
   };
 }
