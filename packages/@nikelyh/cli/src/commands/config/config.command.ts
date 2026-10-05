@@ -7,6 +7,7 @@ import {
   MetamorphConfig,
   MOZAIK_BUNDLED_MODELS,
   isMozaikBundledModel,
+  validateDisabledAgents,
 } from '@nikelyh/domain';
 import { promptModelSelection, runInteractiveWizard } from './config.prompts';
 
@@ -34,12 +35,14 @@ export function printConfigList(): void {
     'inferenceTimeoutMs',
     'maxRetries',
     'maxIntegrationRounds',
+    'disabledAgents',
   ];
 
   for (const k of keys) {
     const val = resolved[k];
     if (val !== undefined) {
-      console.log(`  • ${chalk.white(k)}: ${chalk.green(String(val))} ${determineSource(k)}`);
+      const display = Array.isArray(val) ? (val.length > 0 ? val.join(', ') : 'none') : String(val);
+      console.log(`  • ${chalk.white(k)}: ${chalk.green(display)} ${determineSource(k)}`);
     }
   }
   console.log('');
@@ -56,12 +59,25 @@ async function handleInteractiveSet(): Promise<void> {
       { name: 'inferenceTimeoutMs (Timeout per file)', value: 'inferenceTimeoutMs' },
       { name: 'maxRetries (Maximum repair attempts)', value: 'maxRetries' },
       { name: 'maxIntegrationRounds (Maximum build repair rounds)', value: 'maxIntegrationRounds' },
+      { name: 'disabledAgents (Auxiliary agents to disable: reporter, reviewer, accounting)', value: 'disabledAgents' },
     ],
   });
 
-  let finalVal: string | number;
+  let finalVal: string | number | string[];
   if (keyToSet === 'model' || keyToSet === 'reviewerModel') {
     finalVal = await promptModelSelection();
+  } else if (keyToSet === 'disabledAgents') {
+    const { input } = await import('@inquirer/prompts');
+    const raw = await input({
+      message: 'Enter comma-separated auxiliary agents to disable (reporter, reviewer, accounting) or empty to clear:',
+    });
+    const parts = raw.split(',').map((s) => s.trim()).filter(Boolean);
+    const validation = validateDisabledAgents(parts);
+    if (!validation.valid) {
+      console.error(chalk.red(`\n❌ [ConfigError] ${validation.error}`));
+      return;
+    }
+    finalVal = validation.disabled;
   } else {
     const { input } = await import('@inquirer/prompts');
     const raw = await input({
@@ -127,7 +143,7 @@ async function handleTopLevelConfigAction(): Promise<void> {
 async function handleSetSubcommand(key: string, rawValue: string | undefined, isGlobal?: boolean): Promise<void> {
   if (!isMetamorphConfigKey(key)) {
     console.error(chalk.red(`Unknown configuration key: "${key}".`));
-    console.log(chalk.gray(`Valid keys: model, reviewerModel, concurrency, inferenceTimeoutMs, maxRetries, maxIntegrationRounds`));
+    console.log(chalk.gray(`Valid keys: model, reviewerModel, concurrency, inferenceTimeoutMs, maxRetries, maxIntegrationRounds, disabledAgents`));
     process.exit(1);
   }
 
@@ -142,13 +158,24 @@ async function handleSetSubcommand(key: string, rawValue: string | undefined, is
     });
   }
 
+  if (key === 'disabledAgents') {
+    const rawStr = String(parsedValue ?? '');
+    const parts = rawStr.split(',').map((s) => s.trim()).filter(Boolean);
+    const validation = validateDisabledAgents(parts);
+    if (!validation.valid) {
+      console.error(chalk.red(`\n❌ [ConfigError] ${validation.error}`));
+      process.exit(1);
+    }
+    parsedValue = validation.disabled;
+  }
+
   if ((key === 'model' || key === 'reviewerModel') && typeof parsedValue === 'string') {
     if (!isMozaikBundledModel(parsedValue)) {
       console.log(chalk.yellow(`\n⚠️  Warning: "${parsedValue}" is not an officially bundled Mozaik v4 model.`));
       console.log(chalk.gray(`Known models: ${MOZAIK_BUNDLED_MODELS.join(', ')}`));
       const { confirm } = await import('@inquirer/prompts');
       const proceed = await confirm({
-        message: 'Do一道 want to save it anyway as a custom model?',
+        message: 'Do you want to save it anyway as a custom model?',
         default: false,
       });
       if (!proceed) {

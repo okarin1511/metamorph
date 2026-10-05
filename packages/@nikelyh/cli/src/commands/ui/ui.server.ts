@@ -60,6 +60,17 @@ export async function startUiServer(desiredPort: number): Promise<void> {
       console.log(chalk.gray(`  POST /api/migrations/rollback`));
       open(`http://localhost:${port}`);
     });
+
+    process.on('unhandledRejection', (reason) => {
+      const msg = reason instanceof Error ? reason.message : String(reason);
+      console.error(chalk.red(`\n[Metamorph UI] Background swarm error caught: ${msg}`));
+      console.log(chalk.yellow(`[Metamorph UI] HTTP server remains active on http://localhost:${port}`));
+    });
+
+    process.on('uncaughtException', (error) => {
+      console.error(chalk.red(`\n[Metamorph UI] Uncaught exception caught: ${error.message}`));
+      console.log(chalk.yellow(`[Metamorph UI] HTTP server remains active on http://localhost:${port}`));
+    });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     spinner.fail(`Failed to start: ${errorMessage}`);

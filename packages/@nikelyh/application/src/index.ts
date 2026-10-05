@@ -1,14 +1,7 @@
 import { StateRepository, MetamorphConfig } from '@nikelyh/domain';
 import { MetamorphState, initializeRuntime, join, resolveRuntime } from './runtime';
-import { createMapperAgent } from './agents/MapperAgent';
-import { createWorkerAgent } from './agents/WorkerAgent';
-import { createReviewerAgent } from './agents/ReviewerAgent';
-import { createPackageManagerAgent } from './agents/PackageManagerAgent';
-import { createCoordinatorAgent } from './agents/CoordinatorAgent';
-import { createReporterAgent } from './agents/ReporterAgent';
-import { createIntegrationAgent } from './agents/IntegrationAgent';
-import { createAccountingAgent } from './agents/AccountingAgent';
 import { registerBuiltinMigrationPlugins } from './migration/plugins';
+import { AgentRegistry } from './agents/registry/AgentRegistry';
 
 import { Tool, createAgent, createHuman, SituationSpecification } from '@mozaik-ai/core';
 
@@ -65,36 +58,31 @@ export function bootstrapMetamorph(repository: StateRepository, tools: Tool[] = 
   });
   join(loggerAgent);
 
-  // 2. Instantiate our agents
-  const mapper = createMapperAgent();
-  const worker = createWorkerAgent(tools);
-  const reviewer = createReviewerAgent(tools);
-  const packageManager = createPackageManagerAgent();
-  const coordinator = createCoordinatorAgent();
-  const reporterTools = tools.filter((tool) => tool.name === 'read_file' || tool.name === 'write_file' || tool.name === 'list_directory');
-  const reporter = createReporterAgent(reporterTools);
-  const integrationAgent = createIntegrationAgent(tools);
-  const accountingAgent = createAccountingAgent();
+  // 2. Instantiate and join our swarm agents via AgentRegistry
+  const { agentsToJoin, disabledAgents } = AgentRegistry.resolveSwarmAgents({ tools, config });
+  for (const agent of agentsToJoin) {
+    join(agent);
+  }
 
-  join(mapper);
-  join(worker);
-  join(reviewer);
-  join(packageManager);
-  join(coordinator);
-  join(reporter);
-  join(integrationAgent);
-  join(accountingAgent);
+  const joinedNames = agentsToJoin.map((a) => a.getManifest().name).join(', ');
+  console.log(`[App] Mozaik initialized. Agents joined: ${joinedNames}`);
+  if (disabledAgents.length > 0) {
+    console.log(`[App] Disabled agents: ${disabledAgents.map((d) => `${d.id} (${d.mode})`).join(', ')}`);
+  }
 
-  console.log(`[App] Mozaik initialized. Agents joined: Mapper, Worker, Reviewer, PackageManager, Coordinator, Reporter, IntegrationAgent, AccountingAgent`);
+  const mapperAgent = agentsToJoin.find((a) => a.getManifest().name === 'Mapper');
+  const workerAgent = agentsToJoin.find((a) => a.getManifest().name === 'Worker');
+  const reviewerAgent = agentsToJoin.find((a) => a.getManifest().name.startsWith('Reviewer'));
 
   return {
-    mapperId: mapper.getId(),
-    workerId: worker.getId(),
-    reviewerId: reviewer.getId(),
+    mapperId: mapperAgent?.getId() || '',
+    workerId: workerAgent?.getId() || '',
+    reviewerId: reviewerAgent?.getId() || '',
   };
 }
 
 export * from './runtime';
+export * from './agents/registry/AgentRegistry';
 export * from './agents/MapperAgent';
 export * from './agents/WorkerAgent';
 export * from './agents/ReviewerAgent';
@@ -105,3 +93,4 @@ export * from './agents/IntegrationAgent';
 export * from './agents/AccountingAgent';
 export * from './accounting/TokenAccountingService';
 export * from './MigrationRunner';
+

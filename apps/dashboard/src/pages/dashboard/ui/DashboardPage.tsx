@@ -11,6 +11,7 @@ import { useDashboardActions } from '../model/useDashboardActions';
 import { DashboardHeader } from './DashboardHeader';
 import { DashboardStatusBanner } from './DashboardStatusBanner';
 import { DashboardNav } from './DashboardNav';
+import { ServerOfflineBanner } from './ServerOfflineBanner';
 
 export const DashboardPage = () => {
   const state = useDashboardState();
@@ -25,6 +26,9 @@ export const DashboardPage = () => {
 
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-8 flex flex-col min-h-screen">
+      {state.isServerOffline && (
+        <ServerOfflineBanner onRetry={state.fetchData} />
+      )}
       {state.latestPlan ? (
         <>
           <DashboardHeader
@@ -46,6 +50,9 @@ export const DashboardPage = () => {
             isIntegrating={state.isIntegrating}
             latestStatusMessage={state.latestStatusMessage}
             lastApplyBranch={state.lastApply?.branch}
+            isStalled={state.isStalled}
+            stalledDurationSeconds={state.stalledDurationSeconds}
+            onDiscard={actions.handleDiscardMigration}
           />
 
           <DashboardNav activeTab={state.activeTab} onSelectTab={state.selectTab} />
@@ -54,7 +61,7 @@ export const DashboardPage = () => {
             {state.activeTab === 'overview' && (
               <div className="space-y-8">
                 <CostTracker costSummary={costSummary} totalFiles={state.latestPlan.tasks?.length || 0} />
-                <AgentRoster counts={state.agentCounts} activeAgent={state.activeAgent} />
+                <AgentRoster counts={state.agentCounts} activeAgent={state.activeAgent} disabledAgents={state.disabledAgents} />
                 <OverviewStats
                   pendingTasks={state.pendingTasks}
                   inProgressTasks={state.inProgressTasks}

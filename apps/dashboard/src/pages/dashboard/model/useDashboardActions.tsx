@@ -59,7 +59,9 @@ export function useDashboardActions(
 
     showConfirm(
       'Discard Migration?',
-      <p>This will permanently delete the Shadow Workspace for this run. Are you sure?</p>,
+      <p>
+        This will discard this run, delete its shadow workspace, and reset the migration state so you can start fresh. Are you sure?
+      </p>,
       async () => {
         try {
           const res = await fetch('/api/migrations/rollback', {
@@ -67,13 +69,21 @@ export function useDashboardActions(
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ runId: latestPlan.runId }),
           });
-          if (!res.ok) throw new Error('Rollback failed');
-          await onReset();
-        } catch (err: unknown) {
-          showAlert(
-            'Discard Failed',
-            <p className="text-red-500">{err instanceof Error ? err.message : String(err)}</p>
-          );
+          if (!res.ok) {
+            console.warn('Rollback returned non-ok status, proceeding to reset state');
+          }
+        } catch (rollbackErr) {
+          console.warn('Rollback request failed, proceeding to reset state', rollbackErr);
+        } finally {
+          try {
+            await onReset();
+            await onRefresh();
+          } catch (resetErr) {
+            showAlert(
+              'Discard Failed',
+              <p className="text-red-500 font-bold">{resetErr instanceof Error ? resetErr.message : String(resetErr)}</p>
+            );
+          }
         }
       }
     );

@@ -134,3 +134,38 @@ export function createReviewerAgent(tools: Tool[]): Agent {
     handlers: [reviewFileHandler],
   });
 }
+
+/**
+ * Deterministic bypass agent used when ReviewerAgent is disabled.
+ * Automatically marks migrated files as reviewed/completed without LLM inference,
+ * allowing fast-mode migrations to rely directly on IntegrationAgent shadow build diagnostics.
+ */
+export function createReviewerBypassAgent(): Agent {
+  return createAgent({
+    name: 'ReviewerBypass',
+    capabilities: ['code_review'],
+    instruction: 'You auto-approve migrated files when Reviewer is disabled, delegating diagnostics strictly to shadow build.',
+    tools: [],
+    handlers: [
+      {
+        specification: new WhenFileMigrated(),
+        processor: {
+          async apply({ event, participant }: SituationContext) {
+            const payload = event.payload as SemanticEventPayloads.FileMigrated;
+            const runtime = resolveRuntime();
+            await runtime.state.repository.updateTaskStatus(payload.planId, payload.filePath, 'completed');
+
+            const participantId = participant.getId();
+            sendEvent({
+              type: SemanticEventName.FILE_REVIEWED,
+              producerId: participantId,
+              occurredAt: new Date(),
+              payload: { planId: payload.planId, filePath: payload.filePath },
+            }, participantId);
+          },
+        },
+      },
+    ],
+  });
+}
+

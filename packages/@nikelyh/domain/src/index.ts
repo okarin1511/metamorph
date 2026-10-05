@@ -5,6 +5,7 @@ export * from './entities/ProjectProfile';
 export * from './entities/PackageManagerCommands';
 export * from './entities/catalogs';
 export * from './entities/MetamorphConfig';
+export * from './entities/AgentTaxonomy';
 export * from './entities/TokenUsage';
 export * from './entities/PricingCatalog';
 

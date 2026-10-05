@@ -17,7 +17,7 @@ import {
   ConfigStore,
 } from '@nikelyh/infrastructure';
 import { MigrationRunner } from '@nikelyh/application';
-import { MetamorphConfig, MigrationPlan } from '@nikelyh/domain';
+import { MetamorphConfig, MigrationPlan, validateDisabledAgents } from '@nikelyh/domain';
 import {
   RunCommandOptions,
   SUPPORTED_MIGRATIONS,
@@ -106,6 +106,15 @@ function parseCliFlags(options: RunCommandOptions): Partial<MetamorphConfig> {
   if (options.timeout) cliFlags.inferenceTimeoutMs = parseInt(options.timeout, 10) * 1000;
   if (options.retries) cliFlags.maxRetries = parseInt(options.retries, 10);
   if (options.integrationRounds) cliFlags.maxIntegrationRounds = parseInt(options.integrationRounds, 10);
+  if (options.disableAgents) {
+    const rawList = options.disableAgents.split(',').map((s) => s.trim());
+    const validation = validateDisabledAgents(rawList);
+    if (!validation.valid) {
+      console.error(chalk.red(`\n❌ [ConfigError] ${validation.error}`));
+      process.exit(1);
+    }
+    cliFlags.disabledAgents = validation.disabled;
+  }
   return cliFlags;
 }
 

@@ -215,7 +215,7 @@ export async function runReviewInference(
 
     try {
       console.log(`[ReviewerAgent:${reviewerId}] Starting inference for ${payload.filePath} with model ${modelToUse}...`);
-      runLoop(tempAgent.getId(), prompt, {
+      const loopResult = runLoop(tempAgent.getId(), prompt, {
         model: modelToUse,
         context: tempAgent.getMemory().getContext(),
         structuredOutput: {
@@ -231,7 +231,26 @@ export async function runReviewInference(
           },
           strict: true,
         },
-      });
+      }) as unknown as Promise<void> | undefined;
+
+      if (loopResult && typeof loopResult.catch === 'function') {
+        loopResult.catch(async (error: unknown) => {
+          clearTimeout(timer);
+          console.error(`[ReviewerAgent:${reviewerId}] Async review error:`, error);
+          if (!isDone) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            runtime.state.repository.updateTaskStatus(payload.planId, payload.filePath, 'failed', errorMessage || 'Review inference network error');
+            sendEvent({
+              type: SemanticEventName.FILE_FAILED,
+              producerId: tempAgent.getId(),
+              occurredAt: new Date(),
+              payload: { planId: payload.planId, filePath: payload.filePath, reason: errorMessage || 'Review inference network error' },
+            }, tempAgent.getId());
+            leave(tempAgent);
+            resolve();
+          }
+        });
+      }
     } catch (error: unknown) {
       clearTimeout(timer);
       console.error(`[ReviewerAgent:${reviewerId}] Sync error:`, error);
