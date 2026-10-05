@@ -162,11 +162,30 @@ export async function startWorkerLoop(
 
     try {
       console.log(`[WorkerAgent:${tempAgent.getId()}] Starting inference loop for ${filePath}...`);
-      runLoop(tempAgent.getId(), prompt, {
+      const loopResult = runLoop(tempAgent.getId(), prompt, {
         model: modelToUse,
         context: tempAgent.getMemory().getContext(),
         tools: tempAgent.getTools(),
-      });
+      }) as unknown as Promise<void> | undefined;
+
+      if (loopResult && typeof loopResult.catch === 'function') {
+        loopResult.catch(async (error: unknown) => {
+          clearTimeout(timer);
+          console.error(`[WorkerAgent:${tempAgent.getId()}] Async inference error:`, error);
+          if (!isDone) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            await repository.updateTaskStatus(planId, filePath, 'failed', errorMessage || 'Inference network error');
+            sendEvent({
+              type: SemanticEventName.FILE_FAILED,
+              producerId: tempAgent.getId(),
+              occurredAt: new Date(),
+              payload: { planId, filePath, reason: errorMessage || 'Inference network error' },
+            }, tempAgent.getId());
+            leave(tempAgent);
+            resolve();
+          }
+        });
+      }
     } catch (error: unknown) {
       clearTimeout(timer);
       console.error(`[WorkerAgent:${tempAgent.getId()}] Sync error:`, error);

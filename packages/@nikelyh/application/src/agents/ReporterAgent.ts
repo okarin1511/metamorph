@@ -292,11 +292,19 @@ const draftDuringInstallProcessor = {
 
     const reportAbs = `${shadowPath.replace(/\\/g, '/')}/MIGRATION.md`;
     const modelToUse = runtime.state.config?.model || process.env.METAMORPH_MODEL || 'gpt-5.4';
-    runLoop(participant.getId(), draftPrompt({ reportAbs, plan, notes: board.notes, draft }), {
+    const loopResult = runLoop(participant.getId(), draftPrompt({ reportAbs, plan, notes: board.notes, draft }), {
       model: modelToUse,
       context: participant.getMemory().getContext(),
       tools,
-    });
+    }) as unknown as Promise<void> | undefined;
+
+    if (loopResult && typeof loopResult.catch === 'function') {
+      loopResult.catch((error: unknown) => {
+        console.error('[ReporterAgent] Async report drafting error:', error);
+        board.reportLoopActive = false;
+        log(participant.getId(), p.planId, 'Reporter could not draft MIGRATION.md with LLM; fallback report will be used.', 'warning');
+      });
+    }
 
     setTimeout(async () => {
       const still = runtime.state.journals.get(p.planId);
