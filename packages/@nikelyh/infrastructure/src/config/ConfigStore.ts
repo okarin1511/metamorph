@@ -4,6 +4,7 @@ import * as os from 'node:os';
 import {
   DEFAULT_METAMORPH_CONFIG,
   MetamorphConfig,
+  validateDisabledAgents,
 } from '@nikelyh/domain';
 
 export const CONFIG_FILE_NAME = '.metamorphrc.json';
@@ -36,6 +37,14 @@ export class ConfigStore {
       const parsed = JSON.parse(raw);
       if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
         return null;
+      }
+      if (Array.isArray(parsed.disabledAgents)) {
+        const validation = validateDisabledAgents(parsed.disabledAgents);
+        if (validation.valid) {
+          parsed.disabledAgents = validation.disabled;
+        } else {
+          delete parsed.disabledAgents;
+        }
       }
       return parsed as Partial<MetamorphConfig>;
     } catch {
@@ -120,6 +129,13 @@ export class ConfigStore {
       const parsed = parseInt(env.METAMORPH_INTEGRATION_ROUNDS, 10);
       if (!Number.isNaN(parsed) && parsed > 0) {
         envConfig.maxIntegrationRounds = parsed;
+      }
+    }
+    if (env.METAMORPH_DISABLED_AGENTS) {
+      const parts = env.METAMORPH_DISABLED_AGENTS.split(',').map((s) => s.trim());
+      const validation = validateDisabledAgents(parts);
+      if (validation.valid) {
+        envConfig.disabledAgents = validation.disabled;
       }
     }
 

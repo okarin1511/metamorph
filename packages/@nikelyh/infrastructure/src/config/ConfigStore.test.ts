@@ -96,11 +96,43 @@ describe('ConfigStore Cascading Precedence', () => {
     ConfigStore.saveLocalConfig({
       model: 'gpt-4o',
       maxRetries: 3,
+      disabledAgents: ['reporter'],
     }, tmpDir);
 
     const loaded = ConfigStore.loadLocalConfig(tmpDir);
     assert.ok(loaded);
     assert.equal(loaded.model, 'gpt-4o');
     assert.equal(loaded.maxRetries, 3);
+    assert.deepEqual(loaded.disabledAgents, ['reporter']);
+  });
+
+  test('parses disabledAgents from environment variable METAMORPH_DISABLED_AGENTS', () => {
+    const config = ConfigStore.resolveConfig({
+      cwd: tmpDir,
+      env: {
+        METAMORPH_DISABLED_AGENTS: 'reporter, reviewer',
+      },
+    });
+
+    assert.deepEqual(config.disabledAgents, ['reporter', 'reviewer']);
+  });
+
+  test('CLI flags override disabledAgents from environment and local config', () => {
+    const localConfigFile = path.join(tmpDir, CONFIG_FILE_NAME);
+    fs.writeFileSync(localConfigFile, JSON.stringify({
+      disabledAgents: ['accounting'],
+    }), 'utf-8');
+
+    const config = ConfigStore.resolveConfig({
+      cwd: tmpDir,
+      env: {
+        METAMORPH_DISABLED_AGENTS: 'reporter',
+      },
+      cliFlags: {
+        disabledAgents: ['reviewer'],
+      },
+    });
+
+    assert.deepEqual(config.disabledAgents, ['reviewer']);
   });
 });
