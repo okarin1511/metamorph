@@ -72,8 +72,7 @@ export function createAppRouter(appService: AppService): Router {
       'supertest': '^6.3.3'
     },
     scriptsToUpdate: {
-      'build': 'tsc',
-      'start': 'node dist/main.js'
+      'build': 'tsc'
     },
     architecturalRules: [
       'Express routing logic must be encapsulated in classes decorated with @Controller().',
@@ -275,8 +274,7 @@ app.listen(3000);`
       'supertest': '^6.3.3'
     },
     scriptsToUpdate: {
-      'build': 'tsc',
-      'start': 'node dist/main.js'
+      'build': 'tsc'
     },
     scriptsToRemove: ['dev:start', 'watch:ts'],
     architecturalRules: [
