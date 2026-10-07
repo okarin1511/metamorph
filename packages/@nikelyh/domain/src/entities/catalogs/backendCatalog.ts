@@ -66,9 +66,14 @@ export function createAppRouter(appService: AppService): Router {
       '@nestjs/cli': 'latest',
       '@nestjs/schematics': 'latest',
       '@nestjs/testing': 'latest',
+      '@types/node': '^20.0.0',
       '@types/supertest': '^2.0.12',
       'source-map-support': '^0.5.21',
       'supertest': '^6.3.3'
+    },
+    scriptsToUpdate: {
+      'build': 'tsc',
+      'start': 'node dist/main.js'
     },
     architecturalRules: [
       'Express routing logic must be encapsulated in classes decorated with @Controller().',
@@ -264,10 +269,16 @@ app.listen(3000);`
       '@nestjs/cli': 'latest',
       '@nestjs/schematics': 'latest',
       '@nestjs/testing': 'latest',
+      '@types/node': '^20.0.0',
       '@types/supertest': '^2.0.12',
       'source-map-support': '^0.5.21',
       'supertest': '^6.3.3'
     },
+    scriptsToUpdate: {
+      'build': 'tsc',
+      'start': 'node dist/main.js'
+    },
+    scriptsToRemove: ['dev:start', 'watch:ts'],
     architecturalRules: [
       'Fastify routing logic must be encapsulated in classes decorated with @Controller().',
       'Business logic must be encapsulated in classes decorated with @Injectable() (Providers/Services).',
