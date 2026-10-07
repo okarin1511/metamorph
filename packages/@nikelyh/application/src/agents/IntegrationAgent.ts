@@ -408,6 +408,21 @@ When you have applied fixes (or cannot fix further), stop. A deterministic rebui
       const verifierFailed = structureIssues.length > 0;
 
       if (!buildFailed && !verifierFailed) {
+        try {
+          const fs = await import('node:fs');
+          const path = await import('node:path');
+          const pkgPath = path.join(shadowPath, 'package.json');
+          if (fs.existsSync(pkgPath)) {
+            const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+            const { adaptProjectScripts } = await import('../analysis/projectConfigAdapter');
+            if (adaptProjectScripts(pkg, shadowPath, plan.profile.target)) {
+              fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf-8');
+            }
+          }
+        } catch (err) {
+          console.warn('[IntegrationAgent] Non-blocking warning adapting project scripts:', err);
+        }
+
         await completeMigration(
           producerId,
           planId,

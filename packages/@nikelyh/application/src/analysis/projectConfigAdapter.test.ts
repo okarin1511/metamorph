@@ -7,6 +7,8 @@ import {
   adaptTypeScriptConfig,
   ensureBuildScript,
   sanitizeJsonContent,
+  detectEntryPoint,
+  adaptProjectScripts,
 } from './projectConfigAdapter';
 
 describe('projectConfigAdapter', () => {
@@ -141,6 +143,90 @@ describe('projectConfigAdapter', () => {
       const modified = ensureBuildScript(pkg, 'nestjs');
       assert.strictEqual(modified, false);
       assert.strictEqual(pkg.scripts.build, 'nest build');
+    });
+  });
+
+  describe('detectEntryPoint', () => {
+    it('detects src/app.ts when present', () => {
+      fs.mkdirSync(path.join(tmpDir, 'src'), { recursive: true });
+      fs.writeFileSync(path.join(tmpDir, 'src', 'app.ts'), '// app');
+      const entry = detectEntryPoint(tmpDir);
+      assert.strictEqual(entry.relativePath, 'src/app.ts');
+      assert.strictEqual(entry.baseName, 'app');
+      assert.strictEqual(entry.outPath, 'dist/app.js');
+    });
+
+    it('detects src/main.ts when present', () => {
+      fs.mkdirSync(path.join(tmpDir, 'src'), { recursive: true });
+      fs.writeFileSync(path.join(tmpDir, 'src', 'main.ts'), '// main');
+      const entry = detectEntryPoint(tmpDir);
+      assert.strictEqual(entry.relativePath, 'src/main.ts');
+      assert.strictEqual(entry.baseName, 'main');
+      assert.strictEqual(entry.outPath, 'dist/main.js');
+    });
+
+    it('detects root server.ts when src directory is not used', () => {
+      fs.writeFileSync(path.join(tmpDir, 'server.ts'), '// server');
+      const entry = detectEntryPoint(tmpDir);
+      assert.strictEqual(entry.relativePath, 'server.ts');
+      assert.strictEqual(entry.baseName, 'server');
+      assert.strictEqual(entry.outPath, 'dist/server.js');
+    });
+
+    it('falls back to src/main.ts default when no candidate file is found', () => {
+      const entry = detectEntryPoint(tmpDir);
+      assert.strictEqual(entry.relativePath, 'src/main.ts');
+      assert.strictEqual(entry.baseName, 'main');
+      assert.strictEqual(entry.outPath, 'dist/main.js');
+    });
+  });
+
+  describe('adaptProjectScripts', () => {
+    it('dynamically points start script to dist/app.js when src/app.ts is present', () => {
+      fs.mkdirSync(path.join(tmpDir, 'src'), { recursive: true });
+      fs.writeFileSync(path.join(tmpDir, 'src', 'app.ts'), '// app');
+
+      const pkg: { scripts: Record<string, string> } = {
+        scripts: {
+          start: 'fastify start -l info dist/app.js',
+          dev: 'concurrently -k -p "[{name}]" -n "TypeScript,App" -c "yellow.bold,cyan.bold" "npm:watch:ts" "npm:dev:start"',
+        },
+      };
+
+      const modified = adaptProjectScripts(pkg, tmpDir, 'nestjs');
+      assert.strictEqual(modified, true);
+      assert.strictEqual(pkg.scripts.build, 'tsc');
+      assert.strictEqual(pkg.scripts.start, 'node dist/app.js');
+      assert.strictEqual(pkg.scripts.dev, 'tsc -w');
+    });
+
+    it('points start script to dist/main.js when src/main.ts is present', () => {
+      fs.mkdirSync(path.join(tmpDir, 'src'), { recursive: true });
+      fs.writeFileSync(path.join(tmpDir, 'src', 'main.ts'), '// main');
+
+      const pkg: { scripts: Record<string, string> } = { scripts: {} };
+      const modified = adaptProjectScripts(pkg, tmpDir, 'nestjs');
+      assert.strictEqual(modified, true);
+      assert.strictEqual(pkg.scripts.build, 'tsc');
+      assert.strictEqual(pkg.scripts.start, 'node dist/main.js');
+      assert.strictEqual(pkg.scripts.dev, 'tsc -w');
+    });
+
+    it('preserves custom user build script while adapting start and dev', () => {
+      fs.mkdirSync(path.join(tmpDir, 'src'), { recursive: true });
+      fs.writeFileSync(path.join(tmpDir, 'src', 'app.ts'), '// app');
+
+      const pkg: { scripts: Record<string, string> } = {
+        scripts: {
+          build: 'custom-build-tool',
+        },
+      };
+
+      const modified = adaptProjectScripts(pkg, tmpDir, 'nestjs');
+      assert.strictEqual(modified, true);
+      assert.strictEqual(pkg.scripts.build, 'custom-build-tool');
+      assert.strictEqual(pkg.scripts.start, 'node dist/app.js');
+      assert.strictEqual(pkg.scripts.dev, 'tsc -w');
     });
   });
 });

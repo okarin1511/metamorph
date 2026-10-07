@@ -9,7 +9,7 @@ import {
 } from '@mozaik-ai/core';
 import { resolveRuntime, sendEvent } from '../runtime';
 import { SemanticEventName, SemanticEventPayloads, resolveMigrationCatalog } from '@nikelyh/domain';
-import { adaptTypeScriptConfig, ensureBuildScript } from '../analysis/projectConfigAdapter';
+import { adaptTypeScriptConfig, adaptProjectScripts } from '../analysis/projectConfigAdapter';
 
 /**
  * Specification to match the MIGRATION_STARTED event on the bus.
@@ -152,8 +152,8 @@ const managePackagesProcessor = {
           }
         }
 
-        // Dynamically ensure 'build' script exists for shadow build verification
-        ensureBuildScript(pkg, plan.profile.target);
+        // Dynamically adapt build, start, and dev scripts based on project structure and entry point
+        adaptProjectScripts(pkg, shadowDir, plan.profile.target);
 
         fs.writeFileSync(packageJsonPath, JSON.stringify(pkg, null, 2) + '\n', 'utf-8');
         console.log(`[PackageManagerAgent] Updated package.json dependencies directly (no npm subprocess).`);
