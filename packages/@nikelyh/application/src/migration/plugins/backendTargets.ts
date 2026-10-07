@@ -60,12 +60,16 @@ export function analyzeExpressTarget(shadowRoot: string): StructureIssue[] {
     path.join(shadowRoot, 'src', 'index.ts'),
     path.join(shadowRoot, 'src', 'server.ts'),
     path.join(shadowRoot, 'src', 'app.ts'),
+    path.join(shadowRoot, 'main.ts'),
+    path.join(shadowRoot, 'index.ts'),
+    path.join(shadowRoot, 'server.ts'),
+    path.join(shadowRoot, 'app.ts'),
   );
 
   if (!main) {
     issues.push({
       filePath: path.join(shadowRoot, 'src', 'main.ts'),
-      errors: ['Missing Express entry point. Create src/main.ts (or index.ts/server.ts) that creates express(), mounts routers, and calls app.listen().'],
+      errors: ['Missing Express entry point. Create src/main.ts (or index.ts/server.ts/app.ts) that creates express(), mounts routers, and calls app.listen().'],
     });
     return issues;
   }
@@ -120,6 +124,7 @@ Do not leave NestFactory.create() or fastify() calls.
 export function analyzeFastifyTarget(shadowRoot: string): StructureIssue[] {
   const issues: StructureIssue[] = [
     ...leftoverDependencyImports(shadowRoot, /@nestjs\//, 'NestJS'),
+    ...leftoverDependencyImports(shadowRoot, /^express$/, 'Express'),
     ...leftoverScripts(shadowRoot, /\bnest\b/, 'package.json still runs NestJS scripts; Fastify target must not depend on nest CLI'),
   ];
 
@@ -128,12 +133,16 @@ export function analyzeFastifyTarget(shadowRoot: string): StructureIssue[] {
     path.join(shadowRoot, 'src', 'index.ts'),
     path.join(shadowRoot, 'src', 'server.ts'),
     path.join(shadowRoot, 'src', 'app.ts'),
+    path.join(shadowRoot, 'main.ts'),
+    path.join(shadowRoot, 'index.ts'),
+    path.join(shadowRoot, 'server.ts'),
+    path.join(shadowRoot, 'app.ts'),
   );
 
   if (!main) {
     issues.push({
       filePath: path.join(shadowRoot, 'src', 'main.ts'),
-      errors: ['Missing Fastify entry point. Create src/main.ts (or index.ts/server.ts) that creates a Fastify instance, registers plugins, and calls fastify.listen().'],
+      errors: ['Missing Fastify entry point. Create src/main.ts (or index.ts/server.ts/app.ts) that creates a Fastify instance, registers plugins, and calls fastify.listen().'],
     });
     return issues;
   }
@@ -190,6 +199,11 @@ export function analyzeNestjsTarget(shadowRoot: string): StructureIssue[] {
 
   const main = readIfExists(
     path.join(shadowRoot, 'src', 'main.ts'),
+    path.join(shadowRoot, 'src', 'app.ts'),
+    path.join(shadowRoot, 'main.ts'),
+    path.join(shadowRoot, 'app.ts'),
+    path.join(shadowRoot, 'index.ts'),
+    path.join(shadowRoot, 'server.ts'),
   );
 
   if (!main) {
@@ -237,14 +251,6 @@ export function analyzeNestjsTarget(shadowRoot: string): StructureIssue[] {
     });
   }
 
-  const nestCliJson = path.join(shadowRoot, 'nest-cli.json');
-  if (!fs.existsSync(nestCliJson)) {
-    issues.push({
-      filePath: nestCliJson,
-      errors: ['Missing nest-cli.json. The NestJS CLI expects this config for build and generate commands.'],
-    });
-  }
-
   return issues;
 }
 
@@ -288,6 +294,10 @@ export const expressTargetPlugin: MigrationPlugin = {
       path.join(shadowRoot, 'src', 'index.ts'),
       path.join(shadowRoot, 'src', 'server.ts'),
       path.join(shadowRoot, 'src', 'app.ts'),
+      path.join(shadowRoot, 'main.ts'),
+      path.join(shadowRoot, 'index.ts'),
+      path.join(shadowRoot, 'server.ts'),
+      path.join(shadowRoot, 'app.ts'),
     ];
   },
 };
@@ -309,6 +319,10 @@ export const fastifyTargetPlugin: MigrationPlugin = {
       path.join(shadowRoot, 'src', 'index.ts'),
       path.join(shadowRoot, 'src', 'server.ts'),
       path.join(shadowRoot, 'src', 'app.ts'),
+      path.join(shadowRoot, 'main.ts'),
+      path.join(shadowRoot, 'index.ts'),
+      path.join(shadowRoot, 'server.ts'),
+      path.join(shadowRoot, 'app.ts'),
     ];
   },
 };
@@ -327,8 +341,11 @@ export const nestjsTargetPlugin: MigrationPlugin = {
     return [
       path.join(shadowRoot, 'package.json'),
       path.join(shadowRoot, 'src', 'main.ts'),
+      path.join(shadowRoot, 'src', 'app.ts'),
       path.join(shadowRoot, 'src', 'app.module.ts'),
-      path.join(shadowRoot, 'nest-cli.json'),
+      path.join(shadowRoot, 'main.ts'),
+      path.join(shadowRoot, 'app.ts'),
+      path.join(shadowRoot, 'index.ts'),
     ];
   },
 };
