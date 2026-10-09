@@ -64,19 +64,24 @@ Orchestration layer integrating the Mozaik v4 runtime (`@mozaik-ai/core`):
   5. `CoordinatorAgent`: Watchdog polling every 8s to detect when all tasks settle before triggering shadow integration.
   6. `IntegrationAgent`: Runs clean installs and compilation builds inside the sandbox.
   7. `ReporterAgent`: Generates `MIGRATION.md` with dynamic commands.
+  8. `AgentRegistry`: Dynamic agent lifecycle management supporting `--disable-agents`, zero-token fallback modes, and server offline detection.
 * **Vertical Capability Slices**:
   - `src/concurrency/`: `ConcurrencyQueue` limiting simultaneous LLM inferences.
   - `src/context/`: `FileTreeBuilder`, `NeighborContext` providing cross-file context.
   - `src/analysis/`: Diagnostic and heuristic tools (`NextMigrationHints`, `FrontendRuntimeHints`, `classifyMissingFile`, `workerCompletion`).
+  - `src/migration/plugins/`: Deterministic target validation plugins for frontend (`target-vue`, `target-svelte`, `target-angular`) and backend (`target-express`, `target-fastify`, `target-nestjs`).
 
 ### 3.3. `packages/@nikelyh/infrastructure`
 Secondary adapter implementations:
-* **Persistence (`src/db/SQLiteStateStore.ts`)**: Native Node.js `node:sqlite` (`DatabaseSync`) storing plans, tasks, and telemetry events with automatic `ALTER TABLE` schema evolution.
+* **Persistence (`src/db/`)**:
+  - `SQLiteStateStore.ts`: Native Node.js `node:sqlite` (`DatabaseSync`) storing plans, tasks, and telemetry events with automatic `ALTER TABLE` schema evolution.
+  - `CostAccountingStore.ts`: Persistent token usage tracking (prompt, completion, model) and live financial cost estimation.
+* **Configuration (`src/config/ConfigStore.ts`)**: Cascading hierarchical configuration engine resolving `CLI flags` > `process.env` > `.metamorphrc.json` > `~/.metamorphrc.json` > defaults.
 * **Workspace (`src/workspace/ShadowWorkspace.ts`)**: Sandboxed cloning, boundary checking (`assertSandbox`), and git integration (`MigrationIntegrator.ts`).
 * **Project Intelligence Engine (`src/detector/`)**:
   - `WorkspaceResolver`: Monorepo root discovery.
   - `ManifestInspector`: Weighted dependency analysis.
-  - `StructureInspector`: Physical router variant detection.
+  - `StructureInspector`: Physical router and entrypoint variant detection.
   - `SubsumptionEngine`: Directed Acyclic Graph (DAG) resolving meta-framework collisions.
 
 ### 3.4. `packages/@nikelyh/cli`
