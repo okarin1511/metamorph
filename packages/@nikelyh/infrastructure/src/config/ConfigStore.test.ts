@@ -1,4 +1,4 @@
-import { test, describe, beforeEach, afterEach } from 'node:test';
+import { test, describe, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
@@ -12,9 +12,11 @@ describe('ConfigStore Cascading Precedence', () => {
   beforeEach(() => {
     tmpDir = path.join(os.tmpdir(), `metamorph-config-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     fs.mkdirSync(tmpDir, { recursive: true });
+    mock.method(ConfigStore, 'loadGlobalConfig', () => null);
   });
 
   afterEach(() => {
+    mock.reset();
     try {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     } catch {}
