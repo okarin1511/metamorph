@@ -188,7 +188,7 @@ export async function executeRunAction(targetPathArg: string | undefined, option
   presentModelWarning(options.model);
   presentMigrationStart({ targetPath, from, to, config: resolvedConfig });
 
-  const hasApiKey = process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY;
+  const hasApiKey = process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN;
   if (!hasApiKey) {
     presentMissingApiKey();
     process.exit(1);

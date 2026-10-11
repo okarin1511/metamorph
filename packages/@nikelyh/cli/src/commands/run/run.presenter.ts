@@ -12,14 +12,16 @@ export function logStartupContext(): void {
 
 export function presentMissingApiKey(): void {
   console.log(chalk.red(`\n❌ ERROR: No LLM API key detected.`));
-  console.log(chalk.yellow(`Metamorph requires an API key (OPENAI_API_KEY or ANTHROPIC_API_KEY) to power the AI Worker agents.`));
+  console.log(chalk.yellow(`Metamorph requires an LLM credential (OPENAI_API_KEY, ANTHROPIC_API_KEY, or ANTHROPIC_AUTH_TOKEN) to power the AI Worker agents.`));
   console.log(chalk.yellow(`Execution has been blocked to prevent agents from crashing during the migration.\n`));
   console.log(chalk.white(`To fix this, you can either:`));
   console.log(chalk.gray(`  1. Create a `) + chalk.cyan(`.env`) + chalk.gray(` file in your current directory with:`));
   console.log(chalk.green(`     OPENAI_API_KEY=sk-...`));
+  console.log(chalk.green(`     ANTHROPIC_API_KEY=sk-ant-...`));
+  console.log(chalk.green(`     ANTHROPIC_AUTH_TOKEN=sk-ant-oat01-...`) + chalk.gray(`  (OAuth token from Claude Max)`));
   console.log(chalk.gray(`  2. Or set it directly in your terminal:`));
-  console.log(chalk.gray(`     Linux/macOS: `) + chalk.cyan(`export OPENAI_API_KEY="sk-..."`));
-  console.log(chalk.gray(`     Windows: `) + chalk.cyan(`$env:OPENAI_API_KEY="sk-..."\n`));
+  console.log(chalk.gray(`     Linux/macOS: `) + chalk.cyan(`export ANTHROPIC_API_KEY="sk-ant-..."`));
+  console.log(chalk.gray(`     Windows: `) + chalk.cyan(`$env:ANTHROPIC_API_KEY="sk-ant-..."\n`));
 }
 
 export function presentModelWarning(model?: string): void {
