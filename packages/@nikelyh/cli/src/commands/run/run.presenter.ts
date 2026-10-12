@@ -10,6 +10,10 @@ export function logStartupContext(): void {
   }
 }
 
+export function hasLlmCredentials(): boolean {
+  return !!(process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
+}
+
 export function presentMissingApiKey(): void {
   console.log(chalk.red(`\n❌ ERROR: No LLM API key detected.`));
   console.log(chalk.yellow(`Metamorph requires an LLM credential (OPENAI_API_KEY, ANTHROPIC_API_KEY, or ANTHROPIC_AUTH_TOKEN) to power the AI Worker agents.`));
