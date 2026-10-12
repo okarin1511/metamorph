@@ -25,6 +25,7 @@ import {
 } from './run.options';
 import {
   logStartupContext,
+  hasLlmCredentials,
   presentMissingApiKey,
   presentModelWarning,
   presentMigrationStart,
@@ -188,8 +189,7 @@ export async function executeRunAction(targetPathArg: string | undefined, option
   presentModelWarning(options.model);
   presentMigrationStart({ targetPath, from, to, config: resolvedConfig });
 
-  const hasApiKey = process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY;
-  if (!hasApiKey) {
+  if (!hasLlmCredentials()) {
     presentMissingApiKey();
     process.exit(1);
   }
