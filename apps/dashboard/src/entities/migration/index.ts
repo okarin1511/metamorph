@@ -2,6 +2,7 @@ export const FRAMEWORKS = [
   { value: 'express',   label: 'Express',    group: 'backend',  icon: '/icons/expressjs.svg' },
   { value: 'fastify',   label: 'Fastify',    group: 'backend',  icon: '/icons/fastify.svg' },
   { value: 'nestjs',    label: 'NestJS',     group: 'backend',  icon: '/icons/nestjs.svg' },
+  { value: 'hono',      label: 'Hono',       group: 'backend',  icon: '/icons/hono.svg' },
   // { value: 'koa',       label: 'Koa',        group: 'backend',  icon: '/icons/koa.svg' },
   // { value: 'hapi',      label: 'Hapi',       group: 'backend',  icon: '/icons/hapi.svg' },
   { value: 'next',      label: 'Next.js',    group: 'frontend', icon: '/icons/nextjs.svg' },
