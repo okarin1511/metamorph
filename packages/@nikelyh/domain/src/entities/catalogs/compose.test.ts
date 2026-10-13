@@ -9,7 +9,7 @@ import { FRAMEWORK_PACKS } from './frameworks';
 describe('resolveMigrationCatalog', () => {
   it('resolves a known backend pair (express -> fastify)', () => {
     const result = resolveMigrationCatalog('express', 'fastify');
-    assert.ok(result, 'express -> fastify should be in the catalog');
+    if (!result) { assert.fail('express -> fastify should be in the catalog'); return; }
     assert.equal(result.source, 'express');
     assert.equal(result.target, 'fastify');
     assert.equal(result.layer, 'backend');
@@ -19,7 +19,7 @@ describe('resolveMigrationCatalog', () => {
 
   it('resolves a known frontend pair (react -> vue)', () => {
     const result = resolveMigrationCatalog('react', 'vue');
-    assert.ok(result, 'react -> vue should be in the catalog');
+    if (!result) { assert.fail('react -> vue should be in the catalog'); return; }
     assert.equal(result.source, 'react');
     assert.equal(result.target, 'vue');
     assert.equal(result.layer, 'frontend');
@@ -28,7 +28,7 @@ describe('resolveMigrationCatalog', () => {
 
   it('resolves hono backend pairs', () => {
     const result = resolveMigrationCatalog('express', 'hono');
-    assert.ok(result, 'express -> hono should be in the catalog');
+    if (!result) { assert.fail('express -> hono should be in the catalog'); return; }
     assert.equal(result.layer, 'backend');
 
     const reverse = resolveMigrationCatalog('hono', 'express');
@@ -45,16 +45,16 @@ describe('resolveMigrationCatalog', () => {
     const lower = resolveMigrationCatalog('express', 'fastify');
     const upper = resolveMigrationCatalog('Express', 'Fastify');
     const mixed = resolveMigrationCatalog('EXPRESS', 'fastify');
-    assert.ok(lower);
-    assert.ok(upper);
-    assert.ok(mixed);
+    if (!lower) { assert.fail('lower case lookup failed'); return; }
+    if (!upper) { assert.fail('upper case lookup failed'); return; }
+    if (!mixed) { assert.fail('mixed case lookup failed'); return; }
     assert.equal(lower.source, upper.source);
     assert.equal(lower.target, mixed.target);
   });
 
   it('includes all rule layers in the resolved output', () => {
     const result = resolveMigrationCatalog('express', 'fastify');
-    assert.ok(result);
+    if (!result) { assert.fail('express -> fastify should resolve'); return; }
 
     const scopes = result.ruleSections.map((s) => s.scope);
     assert.ok(scopes.includes('all'), 'must include "all" layer');
@@ -64,7 +64,7 @@ describe('resolveMigrationCatalog', () => {
 
   it('includes framework sections for source and target', () => {
     const result = resolveMigrationCatalog('react', 'vue');
-    assert.ok(result);
+    if (!result) { assert.fail('react -> vue should resolve'); return; }
 
     const frameworkSections = result.ruleSections.filter((s) => s.scope === 'framework');
     assert.ok(frameworkSections.length >= 2, 'must include framework sections for both source and target');
@@ -76,7 +76,7 @@ describe('resolveMigrationCatalog', () => {
 
   it('includes runtime section for frontend targets with a known runtime', () => {
     const result = resolveMigrationCatalog('react', 'angular');
-    assert.ok(result);
+    if (!result) { assert.fail('react -> angular should resolve'); return; }
 
     const runtimeSections = result.ruleSections.filter((s) => s.scope === 'runtime');
     assert.ok(runtimeSections.length > 0, 'angular target should have Angular CLI runtime rules');
@@ -84,7 +84,7 @@ describe('resolveMigrationCatalog', () => {
 
   it('does not include runtime section for backend pairs', () => {
     const result = resolveMigrationCatalog('express', 'fastify');
-    assert.ok(result);
+    if (!result) { assert.fail('express -> fastify should resolve'); return; }
 
     const runtimeSections = result.ruleSections.filter((s) => s.scope === 'runtime');
     assert.equal(runtimeSections.length, 0, 'backend pairs should not have runtime sections');
@@ -121,7 +121,7 @@ describe('composeRuleSections', () => {
       'unique rule',
     ]);
     const pairSection = sections.find((s) => s.scope === 'pair');
-    assert.ok(pairSection);
+    if (!pairSection) { assert.fail('pair section should exist'); return; }
     assert.equal(pairSection.rules.length, 2, 'duplicate rules should be removed');
   });
 
@@ -135,19 +135,19 @@ describe('composeRuleSections', () => {
   it('uses correct kind for each layer', () => {
     const backendSections = composeRuleSections('backend', 'express', 'fastify', ['rule']);
     const backendLayer = backendSections.find((s) => s.scope === 'backend');
-    assert.ok(backendLayer);
+    if (!backendLayer) { assert.fail('backend layer section should exist'); return; }
     assert.equal(backendLayer.kind, 'contract');
 
     const frontendSections = composeRuleSections('frontend', 'react', 'vue', ['rule']);
     const frontendLayer = frontendSections.find((s) => s.scope === 'frontend');
-    assert.ok(frontendLayer);
+    if (!frontendLayer) { assert.fail('frontend layer section should exist'); return; }
     assert.equal(frontendLayer.kind, 'invariant');
   });
 
   it('pair section always has kind "mapping"', () => {
     const sections = composeRuleSections('backend', 'express', 'fastify', ['some pair rule']);
     const pair = sections.find((s) => s.scope === 'pair');
-    assert.ok(pair);
+    if (!pair) { assert.fail('pair section should exist'); return; }
     assert.equal(pair.kind, 'mapping');
   });
 });
