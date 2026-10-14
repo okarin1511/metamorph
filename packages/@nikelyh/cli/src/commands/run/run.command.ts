@@ -187,7 +187,11 @@ export async function executeRunAction(targetPathArg: string | undefined, option
 
   if (options.dryRun) {
     const profiles = inspectProject(targetPath);
-    const profile = profiles.find((p) => p.framework === from) || profiles[0];
+    const profile = profiles.find((p) => p.framework === from) ?? profiles[0];
+    if (!profile) {
+      console.log(chalk.red(`\n❌ No framework detected in "${targetPath}". Nothing to dry-run.`));
+      process.exit(1);
+    }
     const catalog = resolveMigrationCatalog(from, to);
     if (!catalog) {
       console.log(chalk.red(`\n❌ No migration catalog found for ${from} -> ${to}.`));
