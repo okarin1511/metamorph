@@ -10,6 +10,7 @@ export interface RunCommandOptions {
   retries?: string;
   integrationRounds?: string;
   disableAgents?: string;
+  dryRun?: boolean;
 }
 
 export const SUPPORTED_MIGRATIONS: Record<string, string[]> = {
@@ -34,5 +35,6 @@ export function configureRunOptions(cmd: Command): Command {
     .option('--timeout <seconds>', 'Inference timeout in seconds (e.g. 180)')
     .option('--retries <number>', 'Maximum repair retries per file (e.g. 3)')
     .option('--integration-rounds <number>', 'Maximum shadow build integration rounds (e.g. 4)')
-    .option('--disable-agents <agents>', 'Comma-separated list of auxiliary agents to disable (e.g. reporter, reviewer, accounting)');
+    .option('--disable-agents <agents>', 'Comma-separated list of auxiliary agents to disable (e.g. reporter, reviewer, accounting)')
+    .option('--dry-run', 'Preview the migration plan without running LLM inference');
 }

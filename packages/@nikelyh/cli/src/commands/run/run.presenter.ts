@@ -1,4 +1,4 @@
-import { isMozaikBundledModel, MetamorphConfig, MigrationCostSummary, MOZAIK_BUNDLED_MODELS } from '@nikelyh/domain';
+import { isMozaikBundledModel, MetamorphConfig, MigrationCostSummary, MOZAIK_BUNDLED_MODELS, ResolvedMigrationCatalog, ProjectProfile } from '@nikelyh/domain';
 import chalk from 'chalk';
 
 export function logStartupContext(): void {
@@ -114,4 +114,82 @@ export function presentCostSummary(summary: MigrationCostSummary): void {
     }
   }
   console.log(chalk.cyan(`────────────────────────────────────────────────────────────\n`));
+}
+
+export function presentDryRun(params: {
+  targetPath: string;
+  from: string;
+  to: string;
+  profile: ProjectProfile;
+  catalog: ResolvedMigrationCatalog;
+}): void {
+  const { targetPath, from, to, profile, catalog } = params;
+  const divider = chalk.cyan(`────────────────────────────────────────────────────────────`);
+
+  console.log(divider);
+  console.log(chalk.bold.white(`Metamorph Dry Run — ${from} -> ${to}`));
+  console.log(divider);
+
+  console.log(chalk.white(`\nDetection`));
+  console.log(chalk.gray(`  Path:        `) + chalk.cyan(targetPath));
+  console.log(chalk.gray(`  Framework:   `) + chalk.white(profile.framework));
+  console.log(chalk.gray(`  Category:    `) + chalk.white(profile.category));
+  console.log(chalk.gray(`  Confidence:  `) + chalk.white(`${profile.confidence}%`));
+  if (profile.variant !== 'none') {
+    console.log(chalk.gray(`  Variant:     `) + chalk.white(profile.variant));
+  }
+  console.log(chalk.gray(`  Language:    `) + chalk.white(profile.language));
+  console.log(chalk.gray(`  Bundler:     `) + chalk.white(profile.bundler));
+
+  console.log(chalk.white(`\nCatalog: ${catalog.description}`));
+
+  if (catalog.dependenciesToRemove && catalog.dependenciesToRemove.length > 0) {
+    console.log(chalk.white(`\nDependencies to remove`));
+    for (const dep of catalog.dependenciesToRemove) {
+      console.log(chalk.red(`  - ${dep}`));
+    }
+  }
+  if (catalog.dependenciesToAdd && Object.keys(catalog.dependenciesToAdd).length > 0) {
+    console.log(chalk.white(`\nDependencies to add`));
+    for (const [dep, version] of Object.entries(catalog.dependenciesToAdd)) {
+      console.log(chalk.green(`  + ${dep}@${version}`));
+    }
+  }
+  if (catalog.devDependenciesToRemove && catalog.devDependenciesToRemove.length > 0) {
+    console.log(chalk.white(`\nDev dependencies to remove`));
+    for (const dep of catalog.devDependenciesToRemove) {
+      console.log(chalk.red(`  - ${dep}`));
+    }
+  }
+  if (catalog.devDependenciesToAdd && Object.keys(catalog.devDependenciesToAdd).length > 0) {
+    console.log(chalk.white(`\nDev dependencies to add`));
+    for (const [dep, version] of Object.entries(catalog.devDependenciesToAdd)) {
+      console.log(chalk.green(`  + ${dep}@${version}`));
+    }
+  }
+  if (catalog.scriptsToUpdate && Object.keys(catalog.scriptsToUpdate).length > 0) {
+    console.log(chalk.white(`\nScripts to update`));
+    for (const [name, cmd] of Object.entries(catalog.scriptsToUpdate)) {
+      console.log(chalk.yellow(`  ${name}: ${cmd}`));
+    }
+  }
+  if (catalog.filesToDelete && catalog.filesToDelete.length > 0) {
+    console.log(chalk.white(`\nFiles to delete`));
+    for (const f of catalog.filesToDelete) {
+      console.log(chalk.red(`  - ${f}`));
+    }
+  }
+
+  console.log(chalk.white(`\nRule sections (${catalog.ruleSections.length})`));
+  for (const section of catalog.ruleSections) {
+    const ruleCount = section.groups
+      ? section.groups.reduce((n, g) => n + g.rules.length, 0)
+      : section.rules.length;
+    console.log(chalk.gray(`  [${section.scope}] `) + chalk.white(section.label) + chalk.gray(` (${ruleCount} rules)`));
+  }
+
+  console.log(chalk.white(`\nTotal architectural rules: `) + chalk.cyan(`${catalog.architecturalRules.length}`));
+  console.log(divider);
+  console.log(chalk.green(`\nDry run complete. No files were modified and no LLM tokens were consumed.`));
+  console.log(chalk.gray(`Remove --dry-run to execute this migration.\n`));
 }

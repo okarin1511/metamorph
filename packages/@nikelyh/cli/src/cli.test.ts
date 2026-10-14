@@ -62,5 +62,27 @@ describe('CLI Contract & Build Integrity', () => {
     assert.ok(runOptionsContent.includes('--timeout <seconds>'), 'Expected --timeout option in run command');
     assert.ok(runOptionsContent.includes('--retries <number>'), 'Expected --retries option in run command');
   });
+
+  test('--dry-run flag is registered and presenter exists', () => {
+    const runOptionsPath = path.join(cliDir, 'src/commands/run/run.options.ts');
+    const runOptionsContent = fs.readFileSync(runOptionsPath, 'utf-8');
+    assert.ok(runOptionsContent.includes('--dry-run'), 'Expected --dry-run option in run command');
+    assert.ok(runOptionsContent.includes('dryRun'), 'Expected dryRun in RunCommandOptions interface');
+
+    const presenterPath = path.join(cliDir, 'src/commands/run/run.presenter.ts');
+    const presenterContent = fs.readFileSync(presenterPath, 'utf-8');
+    assert.ok(presenterContent.includes('presentDryRun'), 'Expected presentDryRun function in presenter');
+
+    const commandPath = path.join(cliDir, 'src/commands/run/run.command.ts');
+    const commandContent = fs.readFileSync(commandPath, 'utf-8');
+    assert.ok(commandContent.includes('options.dryRun'), 'Expected dry-run branch in executeRunAction');
+    assert.ok(commandContent.includes('presentDryRun'), 'Expected presentDryRun call in command');
+  });
+
+  test('--dry-run guards against empty inspectProject result', () => {
+    const commandPath = path.join(cliDir, 'src/commands/run/run.command.ts');
+    const commandContent = fs.readFileSync(commandPath, 'utf-8');
+    assert.ok(commandContent.includes('if (!profile)'), 'Expected guard for undefined profile in dry-run path');
+  });
 });
 

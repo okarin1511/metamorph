@@ -17,7 +17,7 @@ import {
   ConfigStore,
 } from '@nikelyh/infrastructure';
 import { MigrationRunner } from '@nikelyh/application';
-import { MetamorphConfig, MigrationPlan, validateDisabledAgents } from '@nikelyh/domain';
+import { MetamorphConfig, MigrationPlan, validateDisabledAgents, resolveMigrationCatalog } from '@nikelyh/domain';
 import {
   RunCommandOptions,
   SUPPORTED_MIGRATIONS,
@@ -32,6 +32,7 @@ import {
   presentMigrationSuccess,
   presentMigrationFailure,
   presentCostSummary,
+  presentDryRun,
 } from './run.presenter';
 
 async function resolveTargetDirectory(targetPathArg?: string): Promise<string> {
@@ -183,6 +184,22 @@ export async function executeRunAction(targetPathArg: string | undefined, option
   const targetPath = await resolveTargetDirectory(targetPathArg);
   const from = await resolveSourceFramework(targetPath, options.from);
   const to = await resolveTargetFramework(from, options.to);
+
+  if (options.dryRun) {
+    const profiles = inspectProject(targetPath);
+    const profile = profiles.find((p) => p.framework === from) ?? profiles[0];
+    if (!profile) {
+      console.log(chalk.red(`\n❌ No framework detected in "${targetPath}". Nothing to dry-run.`));
+      process.exit(1);
+    }
+    const catalog = resolveMigrationCatalog(from, to);
+    if (!catalog) {
+      console.log(chalk.red(`\n❌ No migration catalog found for ${from} -> ${to}.`));
+      process.exit(1);
+    }
+    presentDryRun({ targetPath, from, to, profile, catalog });
+    return;
+  }
 
   const cliFlags = parseCliFlags(options);
   const resolvedConfig = ConfigStore.resolveConfig({ cwd: targetPath, cliFlags });
