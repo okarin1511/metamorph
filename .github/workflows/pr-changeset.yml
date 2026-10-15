@@ -150,7 +150,15 @@ jobs:
                 tableSection = `\n\n| Package | Bump Level | Changelog Summary |\n| :--- | :---: | :--- |\n${rows.join('\n')}`;
               }
 
-              const successBody = `${marker}\n> **✅ Changeset detected**\n>\n> Latest commit: \`${commitSha}\`\n> All package modifications in this pull request are covered by a changeset. Thank you!${tableSection}`;
+              // Check if PR links to a tracking issue (Fixes #123, Closes #123)
+              const prBody = context.payload.pull_request.body || '';
+              const issueLinkRegex = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+(?:[\w-]+\/[\w-]+)?#\d+\b/i;
+              const issueMatch = prBody.match(issueLinkRegex);
+              const issueTip = issueMatch
+                ? `\n\n> 🔗 **Linked Issue**: \`${issueMatch[0]}\``
+                : `\n\n---\n> 💡 **Issue Tracking Tip**: No issue closing keyword detected (e.g. \`Fixes #123\`). If this PR addresses an existing issue, consider linking it so it closes automatically upon merging.`;
+
+              const successBody = `${marker}\n> **✅ Changeset detected**\n>\n> Latest commit: \`${commitSha}\`\n> All package modifications in this pull request are covered by a changeset. Thank you!${tableSection}${issueTip}`;
 
               if (existingComment) {
                 if (existingComment.body !== successBody) {
@@ -167,7 +175,14 @@ jobs:
             }
 
             // Case C: Package code modified but changeset is missing -> Friendly Sticky Reminder
-            const reminderBody = `${marker}\n### ⚠️ No Changeset detected\n\nLatest commit: \`${commitSha}\`\n\nThis pull request modifies package source code in \`@nikelyh/*\` or \`apps/dashboard\`, but no changeset file was detected in \`.changeset/\`.\n\nTo ensure automatic semantic versioning and changelog generation upon merging, please add a changeset:\n\n\`\`\`bash\nnpm run changeset\n\`\`\`\n\nFollow the interactive prompts to select the affected package(s) and bump type (**patch** for fixes, **minor** for features). Commit the generated \`.changeset/*.md\` file to this branch to resolve this notice.\n\n---\n\n#### 💡 Non-release or Internal Changes\n- If this PR is purely internal refactoring or non-functional cleanup, generate an empty changeset:\n  \`\`\`bash\n  npx changeset --empty\n  \`\`\`\n- Or add the **\`skip-changeset\`** label to this pull request to bypass this check cleanly.\n\n*Note: This check is advisory and will not prevent builds or tests from running.*`;
+            const prBody = context.payload.pull_request.body || '';
+            const issueLinkRegex = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+(?:[\w-]+\/[\w-]+)?#\d+\b/i;
+            const issueMatch = prBody.match(issueLinkRegex);
+            const issueTip = issueMatch
+              ? `\n\n> 🔗 **Linked Issue**: \`${issueMatch[0]}\``
+              : `\n\n---\n> 💡 **Issue Tracking Tip**: No issue closing keyword detected (e.g. \`Fixes #123\`). If this PR addresses an existing issue, consider linking it so it closes automatically upon merging.`;
+
+            const reminderBody = `${marker}\n### ⚠️ No Changeset detected\n\nLatest commit: \`${commitSha}\`\n\nThis pull request modifies package source code in \`@nikelyh/*\` or \`apps/dashboard\`, but no changeset file was detected in \`.changeset/\`.\n\nTo ensure automatic semantic versioning and changelog generation upon merging, please add a changeset:\n\n\`\`\`bash\nnpm run changeset\n\`\`\`\n\nFollow the interactive prompts to select the affected package(s) and bump type (**patch** for fixes, **minor** for features). Commit the generated \`.changeset/*.md\` file to this branch to resolve this notice.\n\n---\n\n#### 💡 Non-release or Internal Changes\n- If this PR is purely internal refactoring or non-functional cleanup, generate an empty changeset:\n  \`\`\`bash\n  npx changeset --empty\n  \`\`\`\n- Or add the **\`skip-changeset\`** label to this pull request to bypass this check cleanly.\n\n*Note: This check is advisory and will not prevent builds or tests from running.*${issueTip}`;
 
             if (existingComment) {
               if (existingComment.body !== reminderBody) {
