@@ -1,4 +1,4 @@
-import { StateRepository, resolveMigrationCatalog } from '@nikelyh/domain';
+import { StateRepository, resolveMigrationCatalog, getSupportedFrameworks, getSupportedMigrations } from '@nikelyh/domain';
 import { MigrationIntegrator } from '../workspace/MigrationIntegrator.js';
 import type { Request, Response } from 'express';
 
@@ -121,6 +121,21 @@ export async function createApiServer(
         profiles,
         monorepo: monorepo.isMonorepo ? monorepo : null,
         primary: profiles.length > 0 ? profiles[0].framework : null
+      });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        res.status(500).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: String(error) });
+      }
+    }
+  });
+
+  app.get('/api/catalogs/supported', async (_req: Request, res: Response) => {
+    try {
+      res.json({
+        frameworks: getSupportedFrameworks(),
+        migrations: getSupportedMigrations(),
       });
     } catch (error: unknown) {
       if (error instanceof Error) {

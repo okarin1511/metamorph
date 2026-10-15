@@ -84,5 +84,13 @@ describe('CLI Contract & Build Integrity', () => {
     const commandContent = fs.readFileSync(commandPath, 'utf-8');
     assert.ok(commandContent.includes('if (!profile)'), 'Expected guard for undefined profile in dry-run path');
   });
+
+  test('SUPPORTED_MIGRATIONS is dynamically derived from @nikelyh/domain', async () => {
+    const { SUPPORTED_MIGRATIONS } = await import('./commands/run/run.options.js');
+    assert.ok(SUPPORTED_MIGRATIONS.express.includes('hono'));
+    assert.ok(SUPPORTED_MIGRATIONS.hono.includes('fastify'));
+    assert.ok(SUPPORTED_MIGRATIONS.react.includes('next'));
+    assert.ok(SUPPORTED_MIGRATIONS.next.includes('react'));
+  });
 });
 

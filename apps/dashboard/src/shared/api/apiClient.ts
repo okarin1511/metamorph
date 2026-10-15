@@ -4,6 +4,7 @@ import type {
   MigrationCostSummary,
   StartMigrationResponse,
   ApplyMigrationResponse,
+  SupportedCatalogsResponse,
 } from './types';
 
 const API_BASE = '';
@@ -56,6 +57,12 @@ export class DashboardApiClient {
       const err = await res.json().catch(() => ({ error: res.statusText }));
       throw new Error(err.error || 'Failed to apply migration');
     }
+    return res.json();
+  }
+
+  async getSupportedCatalogs(): Promise<SupportedCatalogsResponse> {
+    const res = await fetch(`${API_BASE}/api/catalogs/supported`);
+    if (!res.ok) throw new Error(`Failed to fetch supported catalogs: ${res.statusText}`);
     return res.json();
   }
 }

@@ -67,3 +67,15 @@ export interface ApplyMigrationResponse {
   branch?: string;
   message: string;
 }
+
+export interface SupportedFrameworkItem {
+  value: string;
+  label: string;
+  group: 'frontend' | 'backend';
+  icon?: string;
+}
+
+export interface SupportedCatalogsResponse {
+  frameworks: SupportedFrameworkItem[];
+  migrations: Record<string, string[]>;
+}

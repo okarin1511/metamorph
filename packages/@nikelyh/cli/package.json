@@ -46,6 +46,7 @@
   },
   "devDependencies": {
     "@nikelyh/application": "*",
+    "@nikelyh/domain": "*",
     "@nikelyh/infrastructure": "*",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
