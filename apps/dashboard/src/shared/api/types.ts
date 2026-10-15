@@ -79,3 +79,19 @@ export interface SupportedCatalogsResponse {
   frameworks: SupportedFrameworkItem[];
   migrations: Record<string, string[]>;
 }
+
+export interface ShadowFileEntry {
+  path: string;
+  status: 'added' | 'modified' | 'deleted';
+}
+
+export interface ShadowFilesResponse {
+  runId: string;
+  files: ShadowFileEntry[];
+}
+
+export interface ShadowDiffResponse {
+  file: string;
+  original: string | null;
+  modified: string | null;
+}
