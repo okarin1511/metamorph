@@ -20,6 +20,7 @@
     "bump:minor": "node scripts/bump-version.mjs minor",
     "bump:major": "node scripts/bump-version.mjs major",
     "changeset": "changeset",
+    "version:packages": "changeset version && node scripts/sync-cli-version.mjs",
     "release": "turbo run build && changeset publish"
   },
   "lint-staged": {
