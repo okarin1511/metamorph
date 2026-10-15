@@ -1,4 +1,5 @@
 import { Command } from 'commander';
+import { getSupportedMigrations } from '@nikelyh/domain';
 
 export interface RunCommandOptions {
   from?: string;
@@ -13,17 +14,7 @@ export interface RunCommandOptions {
   dryRun?: boolean;
 }
 
-export const SUPPORTED_MIGRATIONS: Record<string, string[]> = {
-  express: ['fastify', 'nestjs', 'hono'],
-  fastify: ['express', 'nestjs', 'hono'],
-  nestjs: ['express', 'fastify', 'hono'],
-  hono: ['express', 'fastify', 'nestjs'],
-  react: ['next', 'vue', 'angular', 'svelte'],
-  next: ['react', 'vue', 'angular', 'svelte'],
-  vue: ['react', 'next', 'angular', 'svelte'],
-  angular: ['react', 'next', 'vue', 'svelte'],
-  svelte: ['react', 'next', 'vue', 'angular'],
-};
+export const SUPPORTED_MIGRATIONS: Record<string, string[]> = getSupportedMigrations();
 
 export function configureRunOptions(cmd: Command): Command {
   return cmd
