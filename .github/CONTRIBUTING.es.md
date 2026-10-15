@@ -30,14 +30,16 @@ Este repositorio utiliza el modelo estándar de Git Flow:
     ```bash
     npm run changeset
     ```
-    Sigue las instrucciones interactivas para elegir el/los paquete(s) afectados y el nivel de incremento (`patch` para correcciones, `minor` para nuevas características). Si el PR solo modifica documentación o tests, no es necesario un changeset.
+    Sigue las instrucciones interactivas para elegir el/los paquete(s) afectados y el nivel de incremento (`patch` para correcciones, `minor` para nuevas características).
+    - **Cambios internos / Refactorización**: Si tu PR contiene limpieza de código o cambios internos que no ameritan un release en npm, ejecuta `npx changeset --empty` o añade la etiqueta `skip-changeset` a tu PR.
+    - Si el PR solo modifica documentación o tests, no es necesario un changeset.
 
 4.  **Abre un Pull Request (PR)**:
     Sube tu rama y abre un PR en GitHub apuntando **hacia la rama `develop`** (NO hacia `main`).
     ```bash
     git push origin feature/nombre-de-tu-feature
     ```
-    Nuestro etiquetador automático asignará las etiquetas pertinentes (`area: catalogs`, `area: domain`, etc.), y nuestro bot de Changeset verificará la presencia de tu archivo de release.
+    Nuestros flujos automatizados asignarán las etiquetas pertinentes (`area: catalogs`, `area: domain`, etc.), etiquetas de tamaño de PR (`size/S`, `size/M`, `size/L`) y nuestro bot de Changeset verificará la presencia de tu release con una previsualización instantánea.
     Elige la plantilla de Pull Request adecuada desde `.github/PULL_REQUEST_TEMPLATE/` (o usa la predeterminada):
     - `feature.md`: Nuevas características y capacidades
     - `bugfix.md`: Corrección de errores con RCA y pruebas de regresión

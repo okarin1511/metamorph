@@ -30,14 +30,16 @@ This repository uses the standard Git Flow model:
     ```bash
     npm run changeset
     ```
-    Follow the interactive prompts to pick the affected package(s) and bump type (`patch` for fixes, `minor` for new features). Changes that only touch documentation or tests do not require a changeset.
+    Follow the interactive prompts to pick the affected package(s) and bump type (`patch` for fixes, `minor` for new features).
+    - **Internal changes / Refactoring**: If your PR contains internal code cleanup that should not trigger an npm release, run `npx changeset --empty` or add the `skip-changeset` label to your PR.
+    - Changes that only touch documentation or tests do not require a changeset.
 
 4.  **Open a Pull Request (PR)**:
     Push your branch and open a PR on GitHub targeting **the `develop` branch** (NOT `main`).
     ```bash
     git push origin feature/your-feature-name
     ```
-    Our automated path labeler will assign relevant `area:*` tags (such as `area: catalogs`, `area: domain`, etc.), and our Changeset bot will verify your changeset presence.
+    Our automated workflows will assign relevant architecture labels (`area: catalogs`, `area: domain`, etc.), PR size labels (`size/S`, `size/M`, `size/L`), and our Changeset bot will verify your changeset presence with an instant preview.
     Choose the appropriate Pull Request template from `.github/PULL_REQUEST_TEMPLATE/` (or use the default):
     - `feature.md`: New features and capabilities
     - `bugfix.md`: Bug fixes with RCA and regression tests

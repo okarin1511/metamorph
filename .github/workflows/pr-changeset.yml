@@ -2,7 +2,7 @@ name: PR Changeset Check
 
 on:
   pull_request_target:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
     branches: ["main", "develop"]
 
 permissions:
@@ -22,6 +22,36 @@ jobs:
             const { owner, repo } = context.repo;
             const pullNumber = context.payload.pull_request.number;
             const commitSha = context.payload.pull_request.head.sha.substring(0, 7);
+            const marker = '<!-- metamorph-changeset-bot -->';
+
+            // Check if PR has the skip-changeset label
+            const prLabels = (context.payload.pull_request.labels || []).map(l => l.name);
+            const hasSkipLabel = prLabels.includes('skip-changeset');
+
+            // Find existing bot sticky comment
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number: pullNumber,
+              per_page: 100
+            });
+            const existingComment = comments.find(c => c.body && c.body.includes(marker));
+
+            if (hasSkipLabel) {
+              const skipBody = `${marker}\n> **⏭️ Changeset skipped**\n>\n> Latest commit: \`${commitSha}\`\n> The \`skip-changeset\` label was applied to this pull request. Automated changeset verification is bypassed.`;
+              if (existingComment) {
+                if (existingComment.body !== skipBody) {
+                  await github.rest.issues.updateComment({
+                    owner,
+                    repo,
+                    comment_id: existingComment.id,
+                    body: skipBody
+                  });
+                }
+              }
+              core.info('Bypassed due to skip-changeset label.');
+              return;
+            }
 
             // Fetch all changed files for this pull request
             const files = await github.paginate(github.rest.pulls.listFiles, {
@@ -33,13 +63,14 @@ jobs:
 
             const filenames = files.map(f => f.filename);
 
-            // 1. Check if a valid changeset markdown file exists in .changeset/
-            const hasChangeset = files.some(f => 
+            // 1. Check if valid changeset markdown files exist in .changeset/
+            const changesetFiles = files.filter(f => 
               f.filename.startsWith('.changeset/') &&
               f.filename.endsWith('.md') &&
               !f.filename.endsWith('README.md') &&
               f.status !== 'removed'
             );
+            const hasChangeset = changesetFiles.length > 0;
 
             // 2. Check if the PR modifies package source code requiring a version bump
             const codePackagesPrefixes = ['packages/@nikelyh/', 'apps/dashboard/'];
@@ -62,16 +93,6 @@ jobs:
               return !isIgnored;
             });
 
-            // 3. Search for an existing bot sticky comment
-            const comments = await github.paginate(github.rest.issues.listComments, {
-              owner,
-              repo,
-              issue_number: pullNumber,
-              per_page: 100
-            });
-            const marker = '<!-- metamorph-changeset-bot -->';
-            const existingComment = comments.find(c => c.body && c.body.includes(marker));
-
             // Case A: No package code modified (docs, tests, CI, or internal tools only) -> Bypass
             if (!modifiesPackageCode) {
               if (existingComment) {
@@ -89,9 +110,48 @@ jobs:
               return;
             }
 
-            // Case B: Package code modified and changeset is present -> Success
+            // Case B: Package code modified and changeset is present -> Render Rich Preview Table
             if (hasChangeset) {
-              const successBody = `${marker}\n> **✅ Changeset detected**\n>\n> Latest commit: \`${commitSha}\`\n> All package modifications in this pull request are covered by a changeset. Thank you!`;
+              let rows = [];
+              for (const csFile of changesetFiles) {
+                try {
+                  const { data: fileData } = await github.rest.repos.getContent({
+                    owner,
+                    repo,
+                    path: csFile.filename,
+                    ref: context.payload.pull_request.head.sha
+                  });
+                  if (fileData && fileData.content) {
+                    const rawContent = Buffer.from(fileData.content, 'base64').toString('utf8');
+                    const match = rawContent.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
+                    if (match) {
+                      const frontmatter = match[1].trim();
+                      const summary = match[2].trim().replace(/\r?\n/g, ' ') || '*(No description provided)*';
+                      if (!frontmatter) {
+                        rows.push(`| *(empty)* | *none* | ${summary} |`);
+                      } else {
+                        const lines = frontmatter.split('\n');
+                        for (const line of lines) {
+                          const pkgMatch = line.match(/^["']?([^"':]+)["']?\s*:\s*(\w+)/);
+                          if (pkgMatch) {
+                            rows.push(`| \`${pkgMatch[1]}\` | \`${pkgMatch[2]}\` | ${summary} |`);
+                          }
+                        }
+                      }
+                    }
+                  }
+                } catch (err) {
+                  core.warning(`Could not parse changeset file ${csFile.filename}: ${err.message}`);
+                }
+              }
+
+              let tableSection = '';
+              if (rows.length > 0) {
+                tableSection = `\n\n| Package | Bump Level | Changelog Summary |\n| :--- | :---: | :--- |\n${rows.join('\n')}`;
+              }
+
+              const successBody = `${marker}\n> **✅ Changeset detected**\n>\n> Latest commit: \`${commitSha}\`\n> All package modifications in this pull request are covered by a changeset. Thank you!${tableSection}`;
+
               if (existingComment) {
                 if (existingComment.body !== successBody) {
                   await github.rest.issues.updateComment({
@@ -102,12 +162,12 @@ jobs:
                   });
                 }
               }
-              core.info('Changeset found in PR. Verification successful.');
+              core.info('Changeset found in PR. Verification successful with rich preview.');
               return;
             }
 
             // Case C: Package code modified but changeset is missing -> Friendly Sticky Reminder
-            const reminderBody = `${marker}\n### ⚠️ No Changeset detected\n\nLatest commit: \`${commitSha}\`\n\nThis pull request modifies package source code in \`@nikelyh/*\` or \`apps/dashboard\`, but no changeset file was detected in \`.changeset/\`.\n\nTo ensure automatic semantic versioning and changelog generation upon merging, please add a changeset:\n\n\`\`\`bash\nnpm run changeset\n\`\`\`\n\nFollow the interactive prompts to select the affected package(s) and bump type (**patch** for fixes, **minor** for features). Commit the generated \`.changeset/*.md\` file to this branch to resolve this notice.\n\n*Note: This check is advisory and will not prevent builds or tests from running.*`;
+            const reminderBody = `${marker}\n### ⚠️ No Changeset detected\n\nLatest commit: \`${commitSha}\`\n\nThis pull request modifies package source code in \`@nikelyh/*\` or \`apps/dashboard\`, but no changeset file was detected in \`.changeset/\`.\n\nTo ensure automatic semantic versioning and changelog generation upon merging, please add a changeset:\n\n\`\`\`bash\nnpm run changeset\n\`\`\`\n\nFollow the interactive prompts to select the affected package(s) and bump type (**patch** for fixes, **minor** for features). Commit the generated \`.changeset/*.md\` file to this branch to resolve this notice.\n\n---\n\n#### 💡 Non-release or Internal Changes\n- If this PR is purely internal refactoring or non-functional cleanup, generate an empty changeset:\n  \`\`\`bash\n  npx changeset --empty\n  \`\`\`\n- Or add the **\`skip-changeset\`** label to this pull request to bypass this check cleanly.\n\n*Note: This check is advisory and will not prevent builds or tests from running.*`;
 
             if (existingComment) {
               if (existingComment.body !== reminderBody) {
