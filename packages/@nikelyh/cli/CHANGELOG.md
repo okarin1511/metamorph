@@ -1,5 +1,17 @@
 # @nikelyh/metamorph
 
+## 2.3.0
+
+### Minor Changes
+
+- 8c7c3c0: feat(cli): add --dry-run flag to preview migration plan without LLM inference
+- 44e4f11: feat: add Hono as a supported backend migration target with full CLI and Web Dashboard parity (bidirectional support for Express, Fastify, and NestJS)
+- 3f6d785: feat(architecture): establish domain as single source of truth for supported frameworks and migration catalogs with dynamic API
+
+### Patch Changes
+
+- 7c75e76: ci: add automated changeset reminder bot and PR path labeler workflow with `area: catalogs` categorization
+
 ## 2.2.0
 
 ### Minor Changes
