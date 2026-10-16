@@ -25,7 +25,7 @@ export function resolveFrameworkIcon(framework: string): string {
 
 export { useSupportedCatalogs } from './model/useSupportedCatalogs';
 
-export type Tab = 'overview' | 'swarm' | 'queue' | 'events';
+export type Tab = 'overview' | 'swarm' | 'queue' | 'events' | 'diff';
 
 export interface WorkspacePackage {
   name: string;
