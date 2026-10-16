@@ -6,11 +6,16 @@
 
   [![npm version](https://img.shields.io/npm/v/@nikelyh/metamorph.svg?style=flat-square&color=blue&logo=npm)](https://www.npmjs.com/package/@nikelyh/metamorph)
   [![Powered by Mozaik](https://img.shields.io/badge/Powered%20by-Mozaik-6366f1.svg?style=flat-square&logo=github)](https://github.com/jigjoy-ai/mozaik)
+  [![Documentation](https://img.shields.io/badge/docs-metamorph.nikelyh.tech-0284c7.svg?style=flat-square&logo=gitbook&logoColor=white)](https://metamorph.nikelyh.tech/docs)
+  [![Discord](https://img.shields.io/badge/Discord-Join%20Community-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discord.gg/k6CNvBbNHm)
+  [![Website](https://img.shields.io/badge/Website-metamorph.nikelyh.tech-10b981?style=flat-square&logo=google-chrome&logoColor=white)](https://metamorph.nikelyh.tech/)
 
   <p align="center">
     Refactor and migrate your entire codebase with zero risk and zero downtime.<br/>
     Powered by an elite swarm of autonomous agents.<br/><br/>
-    <b><a href="https://metamorph.nikelyh.tech/docs">Read the Full Documentation</a></b> |
+    <b><a href="https://metamorph.nikelyh.tech/docs">Documentation</a></b> |
+    <b><a href="https://discord.gg/k6CNvBbNHm">Discord Community</a></b> |
+    <b><a href="https://metamorph.nikelyh.tech/">Official Website</a></b> |
     <b><a href="./docs/architecture.md">System Architecture</a></b>
   </p>
 
@@ -180,6 +185,14 @@ We welcome contributions! If you'd like to add support for a new framework migra
 3. Commit your Changes (`npm run changeset`)
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
+
+## Community & Support
+
+- **Discord Server**: Join our [Discord Community](https://discord.gg/k6CNvBbNHm) for real-time discussion, troubleshooting, and direct support.
+- **Documentation**: Explore comprehensive guides and tutorials at [metamorph.nikelyh.tech/docs](https://metamorph.nikelyh.tech/docs).
+- **Official Website**: Learn more at [metamorph.nikelyh.tech](https://metamorph.nikelyh.tech/).
+- **GitHub Discussions**: Share your migration success stories or ask questions in [GitHub Discussions](https://github.com/yohanvillarp/metamorph/discussions).
+- **Issue Tracker**: Report bugs or propose framework targets via [GitHub Issues](https://github.com/yohanvillarp/metamorph/issues).
 
 ---
 <div align="center">
