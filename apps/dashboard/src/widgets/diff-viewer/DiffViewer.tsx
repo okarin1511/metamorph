@@ -90,6 +90,8 @@ export const DiffViewer = ({ runId }: DiffViewerProps) => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setSelectedFile(null);
+    setDiffData(null);
     setLoading(true);
     setError(null);
     apiClient.getShadowFiles(runId)

@@ -153,9 +153,13 @@ export async function createApiServer(
   app.get('/api/shadow/:runId/files', async (req: Request, res: Response) => {
     try {
       const { readdirSync, readFileSync, statSync, existsSync } = await import('node:fs');
-      const { resolve, join, relative } = await import('node:path');
+      const { resolve, join, relative, sep } = await import('node:path');
 
       const runId = String(req.params.runId);
+      if (/[/\\]|\.\./.test(runId)) {
+        res.status(400).json({ error: 'Invalid run ID' });
+        return;
+      }
       const shadowBase = resolve('.metamorph/shadow');
       const shadowDir = join(shadowBase, runId);
 
@@ -238,9 +242,13 @@ export async function createApiServer(
   app.get('/api/shadow/:runId/diff', async (req: Request, res: Response) => {
     try {
       const { readFileSync, statSync, existsSync } = await import('node:fs');
-      const { resolve, join } = await import('node:path');
+      const { resolve, join, sep } = await import('node:path');
 
       const runId = String(req.params.runId);
+      if (/[/\\]|\.\./.test(runId)) {
+        res.status(400).json({ error: 'Invalid run ID' });
+        return;
+      }
       const filePath = String(req.query.file || '');
       if (!filePath) {
         res.status(400).json({ error: 'Missing required query parameter: file' });
@@ -252,7 +260,7 @@ export async function createApiServer(
       const shadowFile = resolve(shadowDir, filePath);
 
       // Path traversal guard — resolved path must stay within the shadow directory
-      if (!shadowFile.startsWith(shadowDir + '/')) {
+      if (!shadowFile.startsWith(shadowDir + sep)) {
         res.status(400).json({ error: 'Invalid file path' });
         return;
       }
@@ -263,7 +271,7 @@ export async function createApiServer(
       const originalFile = originalDir ? resolve(originalDir, filePath) : null;
 
       // Guard original file path traversal too
-      if (originalFile && originalDir && !originalFile.startsWith(originalDir + '/')) {
+      if (originalFile && originalDir && !originalFile.startsWith(originalDir + sep)) {
         res.status(400).json({ error: 'Invalid file path' });
         return;
       }
