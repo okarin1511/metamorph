@@ -8,12 +8,17 @@
     "packages/@nikelyh/*"
   ],
   "packageManager": "npm@10.8.2",
+  "engines": {
+    "node": ">=22.5.0",
+    "npm": ">=10.0.0"
+  },
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
+    "test:smoke": "node packages/@nikelyh/cli/dist/index.js --help && node packages/@nikelyh/cli/dist/index.js list && node packages/@nikelyh/cli/dist/index.js detect apps/dashboard && node packages/@nikelyh/cli/dist/index.js run apps/dashboard --from react --to next --dry-run",
     "check:architecture": "node scripts/verify-architecture.mjs",
     "bump": "node scripts/bump-version.mjs",
     "bump:patch": "node scripts/bump-version.mjs patch",
