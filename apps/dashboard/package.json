@@ -27,12 +27,12 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
     "babel-plugin-react-compiler": "^1.0.0",
-    "eslint": "^10.11.0",
+    "eslint": "^10.12.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.7",
     "globals": "^17.11.0",
     "typescript": "~6.0.2",
-    "typescript-eslint": "^8.71.1",
-    "vite": "^8.3.3"
+    "typescript-eslint": "^8.71.2",
+    "vite": "^8.3.4"
   }
 }
