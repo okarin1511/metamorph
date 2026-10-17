@@ -10,8 +10,20 @@ export function logStartupContext(): void {
   }
 }
 
-export function hasLlmCredentials(): boolean {
+export function hasLlmCredentials(config?: MetamorphConfig): boolean {
+  if (
+    config?.model === 'mock' ||
+    config?.mock ||
+    process.env.METAMORPH_MOCK === '1' ||
+    process.env.METAMORPH_MOCK === 'true'
+  ) {
+    return true;
+  }
   return !!(process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
+}
+
+export function presentMockNotice(): void {
+  console.log(chalk.cyan(`[Metamorph] Running in Mock/Offline mode: Zero API keys required, zero LLM tokens billed.`));
 }
 
 export function presentMissingApiKey(): void {
@@ -26,6 +38,8 @@ export function presentMissingApiKey(): void {
   console.log(chalk.gray(`  2. Or set it directly in your terminal:`));
   console.log(chalk.gray(`     Linux/macOS: `) + chalk.cyan(`export ANTHROPIC_API_KEY="sk-ant-..."`));
   console.log(chalk.gray(`     Windows: `) + chalk.cyan(`$env:ANTHROPIC_API_KEY="sk-ant-..."\n`));
+  console.log(chalk.white(`Or test Metamorph completely offline without credentials using:`));
+  console.log(chalk.cyan(`  metamorph run <path> --from <source> --to <target> --model mock\n`));
 }
 
 export function presentModelWarning(model?: string): void {
@@ -74,8 +88,12 @@ export function presentMigrationFailure(runId: string, targetPath: string): void
 export function presentCostSummary(summary: MigrationCostSummary): void {
   if (!summary || summary.totalTokens === 0) return;
 
+  const headerTitle = summary.isMock
+    ? `📊 Simulated Token Consumption (Mock Provider — Offline / Zero Cost)`
+    : `📊 LLM Token Consumption & Cost Estimation`;
+
   console.log(chalk.cyan(`\n────────────────────────────────────────────────────────────`));
-  console.log(chalk.bold.white(`📊 LLM Token Consumption & Cost Estimation`));
+  console.log(chalk.bold.white(headerTitle));
   console.log(chalk.cyan(`────────────────────────────────────────────────────────────`));
   console.log(
     chalk.white(`Total Tokens:     `) +
@@ -84,7 +102,9 @@ export function presentCostSummary(summary: MigrationCostSummary): void {
   );
   console.log(
     chalk.white(`Estimated Cost:   `) +
-      chalk.yellow(`$${summary.totalCostUsd.toFixed(4)} USD`)
+      (summary.isMock
+        ? chalk.green(`$0.0000 USD (Mock - Not Billed)`)
+        : chalk.yellow(`$${summary.totalCostUsd.toFixed(4)} USD`))
   );
 
   const roles = Object.entries(summary.byAgentRole).filter(([_, data]) => data.tokens > 0);

@@ -26,6 +26,7 @@ import {
 import {
   logStartupContext,
   hasLlmCredentials,
+  presentMockNotice,
   presentMissingApiKey,
   presentModelWarning,
   presentMigrationStart,
@@ -102,7 +103,16 @@ async function resolveTargetFramework(from: string, toArg?: string): Promise<str
 
 function parseCliFlags(options: RunCommandOptions): Partial<MetamorphConfig> {
   const cliFlags: Partial<MetamorphConfig> = {};
-  if (options.model) cliFlags.model = options.model;
+  if (options.mock) {
+    cliFlags.mock = true;
+    cliFlags.model = 'mock';
+  }
+  if (options.model) {
+    cliFlags.model = options.model;
+    if (options.model === 'mock') {
+      cliFlags.mock = true;
+    }
+  }
   if (options.reviewerModel) cliFlags.reviewerModel = options.reviewerModel;
   if (options.concurrency) cliFlags.concurrency = parseInt(options.concurrency, 10);
   if (options.timeout) cliFlags.inferenceTimeoutMs = parseInt(options.timeout, 10) * 1000;
@@ -203,10 +213,18 @@ export async function executeRunAction(targetPathArg: string | undefined, option
 
   const cliFlags = parseCliFlags(options);
   const resolvedConfig = ConfigStore.resolveConfig({ cwd: targetPath, cliFlags });
+  if (
+    resolvedConfig.model === 'mock' ||
+    resolvedConfig.mock ||
+    process.env.METAMORPH_MOCK === '1' ||
+    process.env.METAMORPH_MOCK === 'true'
+  ) {
+    presentMockNotice();
+  }
   presentModelWarning(options.model);
   presentMigrationStart({ targetPath, from, to, config: resolvedConfig });
 
-  if (!hasLlmCredentials()) {
+  if (!hasLlmCredentials(resolvedConfig)) {
     presentMissingApiKey();
     process.exit(1);
   }
