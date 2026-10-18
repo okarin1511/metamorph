@@ -1,6 +1,6 @@
 <div align="center">
-  # 🦋 Metamorph
-  **The Multi-Agent Migration CLI**
+  <h1>🦋 Metamorph</h1>
+  <p><strong>The Multi-Agent Migration CLI</strong></p>
 
   [![npm version](https://img.shields.io/npm/v/@nikelyh/metamorph.svg?style=flat-square&color=blue&logo=npm)](https://www.npmjs.com/package/@nikelyh/metamorph)
   [![Powered by Mozaik](https://img.shields.io/badge/Powered%20by-Mozaik-6366f1.svg?style=flat-square&logo=github)](https://github.com/jigjoy-ai/mozaik)
