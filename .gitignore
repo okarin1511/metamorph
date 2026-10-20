@@ -42,3 +42,9 @@ plans/
 local/
 .agents/scratch/
 .agents/local/
+
+# Lab Workbench Sandboxes & History
+.lab-sandboxes/*
+!.lab-sandboxes/.gitkeep
+lab/history/*
+!lab/history/.gitkeep

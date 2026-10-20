@@ -1,0 +1,11 @@
+{
+  "name": "@metamorph-lab/root",
+  "private": true,
+  "description": "Metamorph Autonomous R&D Lab & Benchmarking Workbench",
+  "type": "module",
+  "scripts": {
+    "dev": "turbo run dev --filter=@metamorph-lab/*",
+    "build": "turbo run build --filter=@metamorph-lab/*",
+    "typecheck": "turbo run typecheck --filter=@metamorph-lab/*"
+  }
+}
