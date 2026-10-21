@@ -11,6 +11,8 @@
     "@nikelyh/application",
     "@nikelyh/domain",
     "@nikelyh/infrastructure",
-    "dashboard"
+    "dashboard",
+    "@metamorph-lab/server",
+    "@metamorph-lab/ui"
   ]
 }
