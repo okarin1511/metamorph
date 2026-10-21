@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { WorkbenchHeader, type WorkbenchView } from '@/widgets/WorkbenchHeader/ui/WorkbenchHeader';
-import { WorkbenchPage } from '@/pages/WorkbenchPage/ui/WorkbenchPage';
-import { ComparePage } from '@/pages/ComparePage/ui/ComparePage';
-import { HistoryPage } from '@/pages/HistoryPage/ui/HistoryPage';
+import { WorkbenchHeader } from '@/widgets/WorkbenchHeader/ui/WorkbenchHeader';
+import { AppRouter } from './router/AppRouter';
 import { apiClient } from '@/shared/api/apiClient';
 import type { ArchetypeInfo, BenchmarkRunResult } from '@/shared/types/index.js';
 
 export const App: React.FC = () => {
-  const [currentView, setCurrentView] = useState<WorkbenchView>('workbench');
   const [archetypes, setArchetypes] = useState<ArchetypeInfo[]>([]);
   const [runs, setRuns] = useState<BenchmarkRunResult[]>([]);
 
@@ -42,25 +39,14 @@ export const App: React.FC = () => {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#030712', display: 'flex', flexDirection: 'column' }}>
-      <WorkbenchHeader
-        currentView={currentView}
-        onViewChange={setCurrentView}
-        activeRunsCount={activeRuns.length}
-      />
+      <WorkbenchHeader activeRunsCount={activeRuns.length} />
 
       <main style={{ flex: 1, paddingBottom: '3rem' }}>
-        {currentView === 'workbench' && (
-          <WorkbenchPage
-            archetypes={archetypes}
-            onTriggerBenchmark={handleTriggerBenchmark}
-          />
-        )}
-        {currentView === 'compare' && (
-          <ComparePage archetypes={archetypes} runs={runs} />
-        )}
-        {currentView === 'history' && (
-          <HistoryPage runs={runs} />
-        )}
+        <AppRouter
+          archetypes={archetypes}
+          runs={runs}
+          onTriggerBenchmark={handleTriggerBenchmark}
+        />
       </main>
     </div>
   );

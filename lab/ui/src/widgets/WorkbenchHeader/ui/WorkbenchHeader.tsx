@@ -1,20 +1,38 @@
 import React from 'react';
+import { useLocation, useNavigate } from 'react-router';
 import { FlaskConical, GitCompare, History, Cpu } from 'lucide-react';
 import { Badge } from '@/shared/ui/Badge';
 
 export type WorkbenchView = 'workbench' | 'compare' | 'history';
 
 export interface WorkbenchHeaderProps {
-  currentView: WorkbenchView;
-  onViewChange: (view: WorkbenchView) => void;
+  currentView?: WorkbenchView;
+  onViewChange?: (view: WorkbenchView) => void;
   activeRunsCount?: number;
 }
 
 export const WorkbenchHeader: React.FC<WorkbenchHeaderProps> = ({
-  currentView,
+  currentView: controlledView,
   onViewChange,
   activeRunsCount = 0,
 }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const getActiveView = (): WorkbenchView => {
+    if (controlledView) return controlledView;
+    if (location.pathname.startsWith('/compare')) return 'compare';
+    if (location.pathname.startsWith('/history')) return 'history';
+    return 'workbench';
+  };
+
+  const activeView = getActiveView();
+
+  const handleNav = (view: WorkbenchView, path: string) => {
+    if (onViewChange) onViewChange(view);
+    navigate(path);
+  };
+
   return (
     <header
       style={{
@@ -61,7 +79,7 @@ export const WorkbenchHeader: React.FC<WorkbenchHeaderProps> = ({
 
       <nav style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
         <button
-          onClick={() => onViewChange('workbench')}
+          onClick={() => handleNav('workbench', '/')}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -72,8 +90,8 @@ export const WorkbenchHeader: React.FC<WorkbenchHeaderProps> = ({
             fontWeight: 500,
             cursor: 'pointer',
             border: 'none',
-            backgroundColor: currentView === 'workbench' ? '#1e293b' : 'transparent',
-            color: currentView === 'workbench' ? '#38bdf8' : '#94a3b8',
+            backgroundColor: activeView === 'workbench' ? '#1e293b' : 'transparent',
+            color: activeView === 'workbench' ? '#38bdf8' : '#94a3b8',
           }}
         >
           <FlaskConical size={16} />
@@ -81,7 +99,7 @@ export const WorkbenchHeader: React.FC<WorkbenchHeaderProps> = ({
         </button>
 
         <button
-          onClick={() => onViewChange('compare')}
+          onClick={() => handleNav('compare', '/compare')}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -92,8 +110,8 @@ export const WorkbenchHeader: React.FC<WorkbenchHeaderProps> = ({
             fontWeight: 500,
             cursor: 'pointer',
             border: 'none',
-            backgroundColor: currentView === 'compare' ? '#1e293b' : 'transparent',
-            color: currentView === 'compare' ? '#38bdf8' : '#94a3b8',
+            backgroundColor: activeView === 'compare' ? '#1e293b' : 'transparent',
+            color: activeView === 'compare' ? '#38bdf8' : '#94a3b8',
           }}
         >
           <GitCompare size={16} />
@@ -101,7 +119,7 @@ export const WorkbenchHeader: React.FC<WorkbenchHeaderProps> = ({
         </button>
 
         <button
-          onClick={() => onViewChange('history')}
+          onClick={() => handleNav('history', '/history')}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -112,8 +130,8 @@ export const WorkbenchHeader: React.FC<WorkbenchHeaderProps> = ({
             fontWeight: 500,
             cursor: 'pointer',
             border: 'none',
-            backgroundColor: currentView === 'history' ? '#1e293b' : 'transparent',
-            color: currentView === 'history' ? '#38bdf8' : '#94a3b8',
+            backgroundColor: activeView === 'history' ? '#1e293b' : 'transparent',
+            color: activeView === 'history' ? '#38bdf8' : '#94a3b8',
           }}
         >
           <History size={16} />
