@@ -1,16 +1,32 @@
 import { spawn } from 'node:child_process';
-import { resolve } from 'node:path';
+import { resolve, join, dirname } from 'node:path';
+import { existsSync, cpSync, readdirSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { SandboxService } from './sandbox.service.js';
 import { DiffService } from './diff.service.js';
 import { MetricsService } from './metrics.service.js';
 import type { BenchmarkRunRequest, BenchmarkRunResult } from '../types/index.js';
 
+function findMonorepoRoot(startDir: string): string {
+  let dir = startDir;
+  while (dir !== dirname(dir)) {
+    if (existsSync(join(dir, 'turbo.json'))) return dir;
+    dir = dirname(dir);
+  }
+  return process.cwd();
+}
+
 export class RunnerService {
+  private readonly monorepoRoot: string;
+
   constructor(
     private readonly sandboxService: SandboxService,
     private readonly metricsService: MetricsService,
     private readonly diffService: DiffService
-  ) {}
+  ) {
+    const thisDir = dirname(fileURLToPath(import.meta.url));
+    this.monorepoRoot = findMonorepoRoot(thisDir);
+  }
 
   public async startBenchmark(
     req: BenchmarkRunRequest,
@@ -59,7 +75,7 @@ export class RunnerService {
       startedAt: new Date(startMs).toISOString(),
     });
 
-    const cliPath = resolve(process.cwd(), 'packages/@nikelyh/cli/dist/index.js');
+    const cliPath = resolve(this.monorepoRoot, 'packages/@nikelyh/cli/dist/index.js');
     const args = [
       cliPath,
       'run',
@@ -73,14 +89,19 @@ export class RunnerService {
     }
 
     try {
-      const { exitCode, stderr } = await this.spawnProcess('node', args);
+      const { exitCode, stdout, stderr } = await this.spawnProcess('node', args);
 
       const durationMs = Date.now() - startMs;
       const completedAt = new Date().toISOString();
 
+      // Metamorph writes to .metamorph/shadow/<runId> — sync results back to lab sandbox
+      this.syncShadowToSandbox(sandboxPath);
+
       // Count files modified by comparing sandbox against original archetype
       const diffs = this.diffService.compareDirectories(archetypePath, sandboxPath);
       const filesModifiedCount = diffs.length;
+
+      const errorOutput = stderr.trim() || stdout.slice(-2000);
 
       if (exitCode === 0) {
         this.metricsService.saveRun({
@@ -103,7 +124,7 @@ export class RunnerService {
           durationMs,
           filesModifiedCount,
           buildSuccess: false,
-          error: stderr.slice(0, 2000) || `Process exited with code ${exitCode}`,
+          error: errorOutput.slice(0, 2000) || `Process exited with code ${exitCode}`,
         });
       }
     } catch (err: unknown) {
@@ -120,10 +141,29 @@ export class RunnerService {
     }
   }
 
+  /**
+   * Metamorph writes migrated files to .metamorph/shadow/<runId>/ inside the sandbox.
+   * Copy the latest shadow run contents back into the sandbox root so diffService
+   * can compare against the original archetype.
+   */
+  private syncShadowToSandbox(sandboxPath: string): void {
+    const shadowBase = join(sandboxPath, '.metamorph', 'shadow');
+    if (!existsSync(shadowBase)) return;
+
+    const runs = readdirSync(shadowBase).sort();
+    const latestRun = runs[runs.length - 1];
+    if (!latestRun) return;
+
+    const shadowDir = join(shadowBase, latestRun);
+    if (!existsSync(shadowDir)) return;
+
+    cpSync(shadowDir, sandboxPath, { recursive: true, force: true });
+  }
+
   private spawnProcess(command: string, args: string[]): Promise<{ exitCode: number; stdout: string; stderr: string }> {
     return new Promise((resolve, reject) => {
       const child = spawn(command, args, {
-        cwd: process.cwd(),
+        cwd: this.monorepoRoot,
         env: { ...process.env },
         stdio: ['ignore', 'pipe', 'pipe'],
       });
